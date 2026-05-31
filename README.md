@@ -38,6 +38,8 @@ App runs at `http://localhost:5173`.
 
 #### Docker
 
+Requires Docker Desktop — install it from [docker.com/products/docker-desktop](https://www.docker.com/products/docker-desktop/) (available for Mac, Windows, and Linux). Once installed, make sure Docker Desktop is running, then:
+
 ```bash
 cd Week-1
 cp .env.sample .env
