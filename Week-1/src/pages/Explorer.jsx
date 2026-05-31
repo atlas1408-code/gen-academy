@@ -12,41 +12,47 @@ export default function Explorer() {
 
   return (
     <div>
+      <div className="screen-divider mb-4" />
+
       <h2
-        className="text-2xl font-bold mb-6"
-        style={{ color: 'var(--text-primary)' }}
+        className="mb-4 uppercase tracking-[0.2em]"
+        style={{
+          color: 'var(--text-highlight)',
+          fontFamily: 'var(--font-pixel)',
+          fontSize: '0.55rem',
+        }}
       >
-        Single Search
+        Pokemon Database
       </h2>
 
-      <div className="max-w-md mb-8">
+      <div className="max-w-md mb-6">
         <SearchAutocomplete onSelect={setSelectedName} />
       </div>
 
       {isLoading && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <CardSkeleton />
           <CardSkeleton />
         </div>
       )}
 
       {isError && (
-        <div
-          className="rounded-xl p-6 text-center"
-          style={{
-            backgroundColor: 'var(--bg-card)',
-            border: '1px solid var(--danger)',
-          }}
-        >
-          <p className="text-sm" style={{ color: 'var(--danger)' }}>
-            Failed to load Pokémon data. Please check the name and try again.
+        <div className="data-panel text-center">
+          <p
+            className="text-sm uppercase"
+            style={{
+              color: 'var(--danger)',
+              fontFamily: 'var(--font-mono)',
+            }}
+          >
+            ERROR: Failed to load Pokemon data. Check name and retry.
           </p>
         </div>
       )}
 
       {pokemon && (
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <PokemonCard pokemon={pokemon} />
             <MovesGrid pokemon={pokemon} />
           </div>

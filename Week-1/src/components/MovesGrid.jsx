@@ -20,59 +20,61 @@ export default function MovesGrid({ pokemon }) {
   const loading = moveQueries.some((q) => q.isLoading)
 
   return (
-    <div>
+    <div className="data-panel">
       <h4
-        className="text-sm font-bold uppercase tracking-wider mb-3"
-        style={{ color: 'var(--text-secondary)' }}
+        className="mb-3 uppercase tracking-[0.15em]"
+        style={{
+          color: 'var(--text-highlight)',
+          fontFamily: 'var(--font-pixel)',
+          fontSize: '0.5rem',
+        }}
       >
         Moves ({loadedMoves.length})
-        {loading && <span className="ml-2 text-xs" style={{ color: 'var(--text-muted)' }}>loading...</span>}
+        {loading && (
+          <span className="ml-2" style={{ color: 'var(--text-muted)', fontSize: '0.45rem' }}>
+            LOADING...
+          </span>
+        )}
       </h4>
 
       {loadedMoves.length === 0 && !loading && (
-        <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
+        <p
+          className="text-sm uppercase"
+          style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}
+        >
           No powered moves found.
         </p>
       )}
 
-      <div className="grid grid-cols-1 gap-1.5 max-h-96 overflow-y-auto pr-1">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 max-h-96 overflow-y-auto pr-1">
         {loadedMoves.map((move) => (
           <div
             key={move.name}
-            className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm"
+            className="flex items-center gap-2 px-2 py-1.5 text-xs"
             style={{
-              backgroundColor: 'var(--bg-card)',
+              backgroundColor: 'var(--bg-input)',
+              borderRadius: 'var(--radius)',
               border: '1px var(--border-style) var(--border-color)',
+              fontFamily: 'var(--font-mono)',
             }}
           >
             <span
-              className="capitalize font-medium flex-1"
+              className="w-2 h-2 rounded-sm flex-shrink-0"
+              style={{ backgroundColor: getTypeColor(move.type.name) }}
+            />
+            <span
+              className="uppercase flex-1 truncate"
               style={{ color: 'var(--text-primary)' }}
             >
               {move.name.replace(/-/g, ' ')}
             </span>
             <span
-              className="px-2 py-0.5 rounded text-xs font-semibold uppercase text-white"
-              style={{ backgroundColor: getTypeColor(move.type.name) }}
-            >
-              {move.type.name}
-            </span>
-            <span
-              className="text-xs w-12 text-center capitalize"
-              style={{ color: 'var(--text-muted)' }}
-            >
-              {move.damage_class.name}
-            </span>
-            <span
-              className="text-xs w-8 text-right font-mono"
-              style={{ color: 'var(--text-primary)' }}
+              className="font-bold"
+              style={{ color: 'var(--text-highlight)' }}
             >
               {move.power}
             </span>
-            <span
-              className="text-xs w-10 text-right font-mono"
-              style={{ color: 'var(--text-secondary)' }}
-            >
+            <span style={{ color: 'var(--text-muted)' }}>
               {move.accuracy ?? '—'}%
             </span>
           </div>

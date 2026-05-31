@@ -37,145 +37,167 @@ export default function PokemonCard({ pokemon, compact = false, showPlatform = f
     })
 
   return (
-    <div
-      className="rounded-xl p-5"
-      style={{
-        backgroundColor: 'var(--bg-card)',
-        border: '1px var(--border-style) var(--border-color)',
-        boxShadow: 'var(--shadow)',
-      }}
-    >
-      {artwork && (
-        <div className={`flex justify-center mb-4 ${showPlatform ? 'battle-platform pb-3' : ''}`}>
-          <img
-            src={artwork}
-            alt={pokemon.name}
-            className={`${compact ? 'w-32 h-32' : 'w-48 h-48'} object-contain drop-shadow-lg`}
-          />
-        </div>
-      )}
-
-      <h3
-        className="text-xl font-bold capitalize text-center mb-0.5"
-        style={{ color: 'var(--text-primary)' }}
-      >
-        {pokemon.name}
-      </h3>
-      <p
-        className="text-xs text-center mb-1"
-        style={{ color: 'var(--text-muted)' }}
-      >
-        #{String(pokemon.id).padStart(3, '0')}
-      </p>
-      {genus && (
-        <p
-          className="text-xs text-center italic mb-3"
-          style={{ color: 'var(--text-secondary)' }}
-        >
-          {genus}
-        </p>
-      )}
-
-      <div className="flex justify-center gap-2 mb-4">
-        {types.map((type) => (
-          <span
-            key={type}
-            className="px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider text-white"
-            style={{ backgroundColor: getTypeColor(type) }}
-          >
-            {type}
-          </span>
-        ))}
-      </div>
-
-      {!compact && (
-        <>
-          {/* Height / Weight */}
-          <div
-            className="flex justify-center gap-6 mb-4 text-xs"
-            style={{ color: 'var(--text-secondary)' }}
-          >
-            <div className="text-center">
-              <span className="block font-bold" style={{ color: 'var(--text-primary)' }}>
-                {heightM} m
-              </span>
-              Height
-            </div>
-            <div
-              className="w-px"
-              style={{ backgroundColor: 'var(--border-color)' }}
+    <div className="data-panel">
+      {/* Scan-readout layout: sprite left, data right */}
+      <div className={`flex ${compact ? 'flex-col items-center' : 'gap-4'}`}>
+        {artwork && (
+          <div className={`flex-shrink-0 flex justify-center ${showPlatform ? 'battle-platform pb-2' : ''}`}>
+            <img
+              src={artwork}
+              alt={pokemon.name}
+              className={`${compact ? 'w-28 h-28' : 'w-36 h-36'} object-contain`}
+              style={{ filter: 'drop-shadow(0 0 6px rgba(80, 200, 120, 0.15))' }}
             />
-            <div className="text-center">
-              <span className="block font-bold" style={{ color: 'var(--text-primary)' }}>
-                {weightKg} kg
-              </span>
-              Weight
-            </div>
+          </div>
+        )}
+
+        <div className={`flex-1 ${compact ? 'text-center' : ''}`}>
+          {/* Name + ID header */}
+          <div className={`flex items-baseline gap-2 mb-1 ${compact ? 'justify-center' : ''}`}>
+            <h3
+              className="text-lg font-bold uppercase"
+              style={{ color: 'var(--text-highlight)', fontFamily: 'var(--font-mono)' }}
+            >
+              {pokemon.name}
+            </h3>
+            <span
+              className="text-xs"
+              style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}
+            >
+              #{String(pokemon.id).padStart(3, '0')}
+            </span>
           </div>
 
-          {/* Flavor Text */}
-          {flavorText && (
+          {genus && (
             <p
-              className="text-xs italic mb-4 text-center leading-relaxed px-2"
-              style={{ color: 'var(--text-secondary)' }}
+              className="text-xs mb-2"
+              style={{ color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)' }}
             >
-              "{flavorText}"
+              {genus}
             </p>
           )}
 
-          {/* Abilities */}
-          {abilities.length > 0 && (
-            <div className="mb-4">
-              <h4
-                className="text-xs font-bold uppercase tracking-wider mb-2"
-                style={{ color: 'var(--text-secondary)' }}
+          {/* Type badges */}
+          <div className={`flex gap-1.5 mb-3 ${compact ? 'justify-center' : ''}`}>
+            {types.map((type) => (
+              <span
+                key={type}
+                className="px-2 py-0.5 text-xs font-bold uppercase tracking-wider text-white"
+                style={{
+                  backgroundColor: getTypeColor(type),
+                  borderRadius: 'var(--radius)',
+                }}
               >
-                Abilities
-              </h4>
-              <div className="space-y-1.5">
-                {abilities.map((ability) => (
-                  <div
-                    key={ability.name}
-                    className="rounded-lg px-3 py-2"
-                    style={{ backgroundColor: 'var(--bg-input)' }}
-                  >
-                    <div className="flex items-center gap-2">
-                      <span
-                        className="text-xs font-semibold capitalize"
-                        style={{ color: 'var(--text-primary)' }}
-                      >
-                        {ability.name.replace(/-/g, ' ')}
-                      </span>
-                      {ability.isHidden && (
-                        <span
-                          className="text-xs px-1.5 py-0.5 rounded"
-                          style={{
-                            backgroundColor: 'var(--accent)',
-                            color: '#fff',
-                            fontSize: '0.6rem',
-                          }}
-                        >
-                          HIDDEN
-                        </span>
-                      )}
-                    </div>
-                    {ability.shortEffect && (
-                      <p
-                        className="text-xs mt-0.5 leading-snug"
-                        style={{ color: 'var(--text-muted)' }}
-                      >
-                        {ability.shortEffect}
-                      </p>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </>
-      )}
+                {type}
+              </span>
+            ))}
+          </div>
 
-      <StatBarChart stats={stats} />
+          {!compact && (
+            <>
+              {/* Height / Weight — inline data readout */}
+              <div
+                className="flex gap-4 mb-3 text-xs"
+                style={{ fontFamily: 'var(--font-mono)' }}
+              >
+                <div>
+                  <span style={{ color: 'var(--text-muted)' }}>HT </span>
+                  <span style={{ color: 'var(--text-primary)' }}>{heightM}m</span>
+                </div>
+                <div>
+                  <span style={{ color: 'var(--text-muted)' }}>WT </span>
+                  <span style={{ color: 'var(--text-primary)' }}>{weightKg}kg</span>
+                </div>
+              </div>
+
+              {/* Flavor Text */}
+              {flavorText && (
+                <p
+                  className="text-xs mb-3 leading-relaxed"
+                  style={{
+                    color: 'var(--text-secondary)',
+                    fontFamily: 'var(--font-mono)',
+                    borderLeft: '2px solid var(--border-color)',
+                    paddingLeft: '8px',
+                  }}
+                >
+                  {flavorText}
+                </p>
+              )}
+
+              {/* Abilities */}
+              {abilities.length > 0 && (
+                <div className="mb-3">
+                  <h4
+                    className="text-xs font-bold uppercase tracking-wider mb-1.5"
+                    style={{
+                      color: 'var(--text-secondary)',
+                      fontFamily: 'var(--font-pixel)',
+                      fontSize: '0.45rem',
+                    }}
+                  >
+                    Abilities
+                  </h4>
+                  <div className="space-y-1">
+                    {abilities.map((ability) => (
+                      <div
+                        key={ability.name}
+                        className="px-2 py-1.5"
+                        style={{
+                          backgroundColor: 'var(--bg-input)',
+                          borderRadius: 'var(--radius)',
+                        }}
+                      >
+                        <div className="flex items-center gap-2">
+                          <span
+                            className="text-xs font-bold uppercase"
+                            style={{
+                              color: 'var(--text-primary)',
+                              fontFamily: 'var(--font-mono)',
+                            }}
+                          >
+                            {ability.name.replace(/-/g, ' ')}
+                          </span>
+                          {ability.isHidden && (
+                            <span
+                              className="text-xs px-1 py-0.5"
+                              style={{
+                                backgroundColor: 'var(--accent)',
+                                color: '#fff',
+                                fontSize: '0.55rem',
+                                fontFamily: 'var(--font-pixel)',
+                                borderRadius: 'var(--radius)',
+                              }}
+                            >
+                              HIDDEN
+                            </span>
+                          )}
+                        </div>
+                        {ability.shortEffect && (
+                          <p
+                            className="text-xs mt-0.5 leading-snug"
+                            style={{
+                              color: 'var(--text-muted)',
+                              fontFamily: 'var(--font-mono)',
+                            }}
+                          >
+                            {ability.shortEffect}
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Stats always at bottom */}
+      <div className="mt-3">
+        <StatBarChart stats={stats} />
+      </div>
     </div>
   )
 }

@@ -33,7 +33,7 @@ export default function RadarChart({ pokemon1, pokemon2 }) {
         borderColor: 'rgba(99, 179, 237, 0.9)',
         borderWidth: 2,
         pointBackgroundColor: 'rgba(99, 179, 237, 1)',
-        pointRadius: 4,
+        pointRadius: 3,
       },
       {
         label: pokemon2.name,
@@ -42,7 +42,7 @@ export default function RadarChart({ pokemon1, pokemon2 }) {
         borderColor: 'rgba(237, 137, 54, 0.9)',
         borderWidth: 2,
         pointBackgroundColor: 'rgba(237, 137, 54, 1)',
-        pointRadius: 4,
+        pointRadius: 3,
       },
     ],
   }
@@ -54,8 +54,8 @@ export default function RadarChart({ pokemon1, pokemon2 }) {
       legend: {
         position: 'top',
         labels: {
-          color: '#94a3b8',
-          font: { size: 12 },
+          color: '#7ab87a',
+          font: { size: 11, family: 'VT323' },
           usePointStyle: true,
           pointStyle: 'rectRounded',
         },
@@ -70,27 +70,21 @@ export default function RadarChart({ pokemon1, pokemon2 }) {
           display: false,
         },
         grid: {
-          color: 'rgba(42, 58, 82, 0.6)',
+          color: 'rgba(30, 58, 90, 0.6)',
         },
         angleLines: {
-          color: 'rgba(42, 58, 82, 0.6)',
+          color: 'rgba(30, 58, 90, 0.6)',
         },
         pointLabels: {
-          color: '#94a3b8',
-          font: { size: 12, weight: 'bold' },
+          color: '#7ab87a',
+          font: { size: 11, weight: 'bold', family: 'VT323' },
         },
       },
     },
   }
 
   return (
-    <div
-      className="rounded-xl p-4"
-      style={{
-        backgroundColor: 'var(--bg-card)',
-        border: '1px var(--border-style) var(--border-color)',
-      }}
-    >
+    <div className="data-panel flex items-center justify-center">
       <Radar data={data} options={options} />
     </div>
   )

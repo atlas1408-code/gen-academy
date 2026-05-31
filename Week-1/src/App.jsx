@@ -5,68 +5,85 @@ import ThemeToggle from './components/ThemeToggle'
 
 function App() {
   return (
-    <div className="min-h-screen flex flex-col">
-      <header
-        className="flex items-center justify-between px-6 py-3 border-b"
-        style={{
-          backgroundColor: 'var(--bg-secondary)',
-          borderColor: 'var(--border-color)',
-        }}
-      >
-        <div className="flex items-center gap-6">
-          <h1
-            className="text-lg font-bold tracking-tight"
-            style={{ color: 'var(--accent-yellow)' }}
-          >
-            <span style={{ color: 'var(--accent)' }}>Poke</span>Arena Analytics
-          </h1>
-          <nav className="flex gap-2">
-            <NavLink
-              to="/explorer"
-              className={({ isActive }) =>
-                `px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                  isActive
-                    ? 'text-white'
-                    : 'hover:opacity-80'
-                }`
-              }
-              style={({ isActive }) => ({
-                backgroundColor: isActive ? 'var(--accent)' : 'transparent',
-                color: isActive ? '#fff' : 'var(--text-secondary)',
-                border: isActive ? 'none' : '1px solid var(--border-color)',
-              })}
-            >
-              Single Search
-            </NavLink>
-            <NavLink
-              to="/battle"
-              className={({ isActive }) =>
-                `px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                  isActive
-                    ? 'text-white'
-                    : 'hover:opacity-80'
-                }`
-              }
-              style={({ isActive }) => ({
-                backgroundColor: isActive ? 'var(--accent)' : 'transparent',
-                color: isActive ? '#fff' : 'var(--text-secondary)',
-                border: isActive ? 'none' : '1px solid var(--border-color)',
-              })}
-            >
-              Battle Arena
-            </NavLink>
-          </nav>
+    <div className="pokedex-shell">
+      {/* ── Device Header: Lens + LEDs ── */}
+      <div className="pokedex-header">
+        <div className="pokedex-lens" />
+        <div className="pokedex-leds">
+          <div className="pokedex-led pokedex-led--red" />
+          <div className="pokedex-led pokedex-led--yellow" />
+          <div className="pokedex-led pokedex-led--green" />
         </div>
-        <ThemeToggle />
-      </header>
+        <div className="ml-auto flex items-center gap-3">
+          <ThemeToggle />
+        </div>
+      </div>
 
-      <main className="flex-1 p-6">
-        <Routes>
-          <Route path="/explorer" element={<Explorer />} />
-          <Route path="/battle" element={<BattleArena />} />
-          <Route path="*" element={<Navigate to="/explorer" replace />} />
-        </Routes>
-      </main>
+      {/* ── Main Screen ── */}
+      <div className="pokedex-screen">
+        {/* Screen header bar */}
+        <div className="screen-header">
+          <div>
+            <span className="screen-header__title">
+              <span style={{ color: 'var(--accent)' }}>Poke</span>Arena
+            </span>
+            <span className="screen-header__subtitle ml-2">Analytics v1.0</span>
+          </div>
+          <div className="power-indicator">
+            <span>PWR</span>
+            <div className="power-bar">
+              <div className="power-bar__segment" />
+              <div className="power-bar__segment" />
+              <div className="power-bar__segment" />
+              <div className="power-bar__segment power-bar__segment--empty" />
+            </div>
+          </div>
+        </div>
+
+        {/* Page content */}
+        <div className="p-4">
+          <Routes>
+            <Route path="/explorer" element={<Explorer />} />
+            <Route path="/battle" element={<BattleArena />} />
+            <Route path="*" element={<Navigate to="/explorer" replace />} />
+          </Routes>
+        </div>
+      </div>
+
+      {/* ── Bottom bar: Nav + decorative controls ── */}
+      <div className="pokedex-footer">
+        {/* D-pad (decorative, compact) */}
+        <div className="dpad dpad--small">
+          <div className="dpad__horizontal" />
+          <div className="dpad__vertical" />
+        </div>
+
+        {/* Navigation */}
+        <div className="pokedex-nav">
+          <NavLink
+            to="/explorer"
+            className={({ isActive }) =>
+              `pokedex-nav__btn ${isActive ? 'pokedex-nav__btn--active' : ''}`
+            }
+          >
+            Explorer
+          </NavLink>
+          <NavLink
+            to="/battle"
+            className={({ isActive }) =>
+              `pokedex-nav__btn ${isActive ? 'pokedex-nav__btn--active' : ''}`
+            }
+          >
+            Battle
+          </NavLink>
+        </div>
+
+        {/* A/B buttons (decorative, compact) */}
+        <div className="ab-buttons">
+          <div className="ab-btn ab-btn--b">B</div>
+          <div className="ab-btn ab-btn--a">A</div>
+        </div>
+      </div>
     </div>
   )
 }

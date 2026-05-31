@@ -29,19 +29,19 @@ function MangaPanel({ event, isLatest }) {
   if (event.type === 'turn') {
     return (
       <motion.div
-        className="relative my-4 py-2 text-center"
+        className="relative my-3 py-1.5 text-center"
         initial={{ opacity: 0, scaleX: 0 }}
         animate={{ opacity: 1, scaleX: 1 }}
         transition={{ duration: 0.3 }}
       >
         <div
-          className="inline-block px-6 py-1.5 uppercase tracking-[0.3em] skew-x-[-3deg]"
+          className="inline-block px-5 py-1 uppercase tracking-[0.3em]"
           style={{
             backgroundColor: 'var(--accent-yellow)',
             color: '#000',
             fontFamily: 'var(--font-pixel)',
-            fontSize: '0.65rem',
-            clipPath: 'polygon(4% 0%, 100% 0%, 96% 100%, 0% 100%)',
+            fontSize: '0.5rem',
+            borderRadius: 'var(--radius)',
           }}
         >
           {event.narrative || `TURN ${event.turn}`}
@@ -53,19 +53,21 @@ function MangaPanel({ event, isLatest }) {
   if (event.type === 'initiative') {
     return (
       <motion.div
-        className="relative my-3 p-4 dialog-box"
+        className="relative my-2 p-3"
         style={{
           backgroundColor: 'var(--bg-secondary)',
+          border: '1px var(--border-style) var(--border-color)',
+          borderRadius: 'var(--radius)',
         }}
-        initial={{ opacity: 0, x: -30 }}
+        initial={{ opacity: 0, x: -20 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.4 }}
       >
         <p
           style={{
             color: 'var(--accent-yellow)',
-            fontFamily: 'var(--font-retro)',
-            fontSize: '1.1rem',
+            fontFamily: 'var(--font-mono)',
+            fontSize: '0.9rem',
             lineHeight: '1.4',
           }}
         >
@@ -82,20 +84,22 @@ function MangaPanel({ event, isLatest }) {
   if (event.type === 'miss') {
     return (
       <motion.div
-        className="relative my-2 p-3 dialog-box"
+        className="relative my-2 p-2"
         style={{
           backgroundColor: 'var(--bg-secondary)',
+          border: '1px var(--border-style) var(--border-color)',
+          borderRadius: 'var(--radius)',
           opacity: 0.7,
         }}
-        initial={{ opacity: 0, x: 20, rotate: 1 }}
-        animate={{ opacity: 0.7, x: 0, rotate: 0 }}
+        initial={{ opacity: 0, x: 10 }}
+        animate={{ opacity: 0.7, x: 0 }}
         transition={{ duration: 0.3 }}
       >
         <p
           style={{
             color: 'var(--text-muted)',
-            fontFamily: 'var(--font-retro)',
-            fontSize: '1.1rem',
+            fontFamily: 'var(--font-mono)',
+            fontSize: '0.85rem',
             fontStyle: 'italic',
           }}
         >
@@ -118,11 +122,11 @@ function MangaPanel({ event, isLatest }) {
     return (
       <motion.div
         className="relative my-2"
-        initial={{ opacity: 0, y: 15 }}
+        initial={{ opacity: 0, y: 10 }}
         animate={{
           opacity: 1,
           y: 0,
-          x: isBigHit ? [0, -4, 4, -3, 3, -1, 0] : 0,
+          x: isBigHit ? [0, -3, 3, -2, 2, 0] : 0,
         }}
         transition={{
           duration: isBigHit ? 0.5 : 0.3,
@@ -133,30 +137,35 @@ function MangaPanel({ event, isLatest }) {
           className="overflow-hidden"
           style={{
             border: isBigHit
-              ? `3px double ${moveColor}`
-              : '3px double var(--border-color)',
-            borderRadius: '4px',
-            boxShadow: isBigHit ? `0 0 20px ${moveColor}40` : 'none',
+              ? `2px solid ${moveColor}`
+              : '1px var(--border-style) var(--border-color)',
+            borderRadius: 'var(--radius)',
+            boxShadow: isBigHit ? `0 0 12px ${moveColor}30` : 'none',
           }}
         >
           {/* Attacker banner */}
           <div
-            className="px-3 py-1.5 flex items-center gap-2"
-            style={{ backgroundColor: `${moveColor}20` }}
+            className="px-3 py-1 flex items-center gap-2"
+            style={{ backgroundColor: `${moveColor}15` }}
           >
             <span
-              className="uppercase tracking-wider capitalize"
+              className="uppercase tracking-wider"
               style={{
                 color: moveColor,
                 fontFamily: 'var(--font-pixel)',
-                fontSize: '0.55rem',
+                fontSize: '0.45rem',
               }}
             >
               {event.attacker}
             </span>
             <span
-              className="px-2 py-0.5 rounded text-xs font-bold uppercase text-white"
-              style={{ backgroundColor: moveColor }}
+              className="px-1.5 py-0.5 text-xs font-bold uppercase text-white"
+              style={{
+                backgroundColor: moveColor,
+                borderRadius: 'var(--radius)',
+                fontFamily: 'var(--font-mono)',
+                fontSize: '0.65rem',
+              }}
             >
               {event.move.replace(/-/g, ' ')}
             </span>
@@ -166,19 +175,19 @@ function MangaPanel({ event, isLatest }) {
                 style={{
                   color: 'var(--danger)',
                   fontFamily: 'var(--font-pixel)',
-                  fontSize: '0.5rem',
+                  fontSize: '0.4rem',
                 }}
-                animate={{ scale: [1, 1.3, 1] }}
+                animate={{ scale: [1, 1.2, 1] }}
                 transition={{ duration: 0.3, repeat: 2 }}
               >
-                {event.effectiveness >= 4 ? '4x DAMAGE!!' : 'SUPER EFFECTIVE!'}
+                {event.effectiveness >= 4 ? '4x!!' : 'SUPER EFF!'}
               </motion.span>
             )}
           </div>
 
-          {/* Narrative body — retro text box */}
+          {/* Narrative body */}
           <div
-            className="px-3 py-3 space-y-1.5"
+            className="px-3 py-2 space-y-1"
             style={{ backgroundColor: 'var(--bg-secondary)' }}
           >
             {narrativeLines.map((line, i) => (
@@ -188,8 +197,8 @@ function MangaPanel({ event, isLatest }) {
                   color: i === narrativeLines.length - 1 && event.effectiveness >= 2
                     ? 'var(--danger)'
                     : 'var(--text-primary)',
-                  fontFamily: 'var(--font-retro)',
-                  fontSize: '1.05rem',
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: '0.85rem',
                   lineHeight: '1.3',
                 }}
               >
@@ -204,17 +213,17 @@ function MangaPanel({ event, isLatest }) {
 
           {/* Damage footer */}
           <div
-            className="px-3 py-1.5 flex items-center justify-between"
+            className="px-3 py-1 flex items-center justify-between"
             style={{
-              backgroundColor: isDevastating ? `${moveColor}15` : 'var(--bg-card)',
-              borderTop: '3px double var(--border-color)',
+              backgroundColor: isDevastating ? `${moveColor}10` : 'var(--bg-card)',
+              borderTop: '1px var(--border-style) var(--border-color)',
             }}
           >
             <span
               style={{
                 color: 'var(--text-muted)',
-                fontFamily: 'var(--font-retro)',
-                fontSize: '0.95rem',
+                fontFamily: 'var(--font-mono)',
+                fontSize: '0.75rem',
               }}
             >
               {event.effectivenessText || 'Normal effectiveness'}
@@ -224,9 +233,9 @@ function MangaPanel({ event, isLatest }) {
               style={{
                 color: isDevastating ? 'var(--danger)' : 'var(--accent-yellow)',
                 fontFamily: 'var(--font-pixel)',
-                fontSize: '0.6rem',
+                fontSize: '0.5rem',
               }}
-              initial={isLatest ? { scale: 1.8 } : {}}
+              initial={isLatest ? { scale: 1.5 } : {}}
               animate={{ scale: 1 }}
               transition={{ duration: 0.3 }}
             >
@@ -253,33 +262,28 @@ export default function CombatLog({ events }) {
   const displayEvents = events.filter((e) => e.type !== 'result')
 
   return (
-    <div
-      className="dialog-box p-4"
-      style={{
-        backgroundColor: 'var(--bg-card)',
-      }}
-    >
+    <div className="data-panel">
       <h4
-        className="mb-3 flex items-center gap-2 uppercase tracking-[0.2em]"
+        className="mb-3 flex items-center gap-2 uppercase tracking-[0.15em]"
         style={{
-          color: 'var(--accent-yellow)',
+          color: 'var(--text-highlight)',
           fontFamily: 'var(--font-pixel)',
-          fontSize: '0.6rem',
+          fontSize: '0.5rem',
         }}
       >
         <span
-          className="inline-block w-6 h-0.5"
+          className="inline-block w-4 h-0.5"
           style={{ backgroundColor: 'var(--accent)' }}
         />
         Battle Chronicle
         <span
-          className="inline-block w-6 h-0.5"
+          className="inline-block w-4 h-0.5"
           style={{ backgroundColor: 'var(--accent)' }}
         />
       </h4>
       <div
         ref={scrollRef}
-        className="max-h-[500px] overflow-y-auto pr-1"
+        className="max-h-[450px] overflow-y-auto pr-1"
       >
         <AnimatePresence>
           {displayEvents.map((event, i) => (

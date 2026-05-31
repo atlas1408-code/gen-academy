@@ -38,15 +38,21 @@ export default function BattleArena() {
 
   return (
     <div>
+      <div className="screen-divider mb-4" />
+
       <h2
-        className="text-2xl font-bold mb-6"
-        style={{ color: 'var(--text-primary)' }}
+        className="mb-4 uppercase tracking-[0.2em]"
+        style={{
+          color: 'var(--text-highlight)',
+          fontFamily: 'var(--font-pixel)',
+          fontSize: '0.55rem',
+        }}
       >
         Battle Arena
       </h2>
 
       {/* Selection panels */}
-      <div className="flex flex-col md:flex-row items-start gap-4 mb-8">
+      <div className="flex flex-col md:flex-row items-stretch gap-3 mb-6">
         <CombatantPanel
           label="Combatant 1"
           selected={name1}
@@ -54,8 +60,12 @@ export default function BattleArena() {
           onRandomDraft={(type) => handleRandomDraft(type, setName1, setDraftType1)}
         />
         <div
-          className="self-center text-3xl font-black"
-          style={{ color: 'var(--danger)' }}
+          className="self-center uppercase tracking-wider"
+          style={{
+            color: 'var(--danger)',
+            fontFamily: 'var(--font-pixel)',
+            fontSize: '0.7rem',
+          }}
         >
           VS
         </div>
@@ -68,15 +78,18 @@ export default function BattleArena() {
       </div>
 
       {(loading1 || loading2) && (
-        <p className="text-sm mb-4" style={{ color: 'var(--text-muted)' }}>
-          Loading Pokémon data...
+        <p
+          className="text-sm mb-4 uppercase"
+          style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}
+        >
+          Loading Pokemon data...
         </p>
       )}
 
       {/* Matchup analysis */}
       {bothSelected && (
         <>
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             <PokemonCard pokemon={pokemon1} compact showPlatform />
             <RadarChart pokemon1={pokemon1} pokemon2={pokemon2} />
             <PokemonCard pokemon={pokemon2} compact showPlatform />

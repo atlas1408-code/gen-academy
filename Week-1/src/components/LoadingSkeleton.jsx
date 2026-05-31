@@ -1,14 +1,14 @@
 export default function LoadingSkeleton({ className = '', lines = 3 }) {
   return (
-    <div className={`animate-pulse space-y-3 ${className}`}>
+    <div className={`animate-pulse space-y-2 ${className}`}>
       {Array.from({ length: lines }).map((_, i) => (
         <div
           key={i}
-          className="rounded"
           style={{
             backgroundColor: 'var(--bg-input)',
-            height: '1rem',
+            height: '0.75rem',
             width: i === lines - 1 ? '60%' : '100%',
+            borderRadius: 'var(--radius)',
           }}
         />
       ))}
@@ -19,39 +19,43 @@ export default function LoadingSkeleton({ className = '', lines = 3 }) {
 export function CardSkeleton() {
   return (
     <div
-      className="rounded-xl p-5 animate-pulse"
-      style={{
-        backgroundColor: 'var(--bg-card)',
-        border: '1px var(--border-style) var(--border-color)',
-      }}
+      className="data-panel animate-pulse"
     >
-      <div
-        className="w-48 h-48 mx-auto mb-4 rounded-lg"
-        style={{ backgroundColor: 'var(--bg-input)' }}
-      />
-      <div
-        className="h-5 w-32 mx-auto mb-2 rounded"
-        style={{ backgroundColor: 'var(--bg-input)' }}
-      />
-      <div className="flex justify-center gap-2 mb-4">
+      <div className="flex gap-4">
         <div
-          className="h-6 w-16 rounded-full"
-          style={{ backgroundColor: 'var(--bg-input)' }}
+          className="w-36 h-36 flex-shrink-0"
+          style={{ backgroundColor: 'var(--bg-input)', borderRadius: 'var(--radius)' }}
         />
-      </div>
-      <div className="space-y-2">
-        {Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} className="flex items-center gap-3">
+        <div className="flex-1 space-y-2">
+          <div
+            className="h-4 w-24"
+            style={{ backgroundColor: 'var(--bg-input)', borderRadius: 'var(--radius)' }}
+          />
+          <div
+            className="h-3 w-16"
+            style={{ backgroundColor: 'var(--bg-input)', borderRadius: 'var(--radius)' }}
+          />
+          <div className="flex gap-1.5">
             <div
-              className="w-8 h-3 rounded"
-              style={{ backgroundColor: 'var(--bg-input)' }}
-            />
-            <div
-              className="flex-1 h-3 rounded-full"
-              style={{ backgroundColor: 'var(--bg-input)' }}
+              className="h-5 w-12"
+              style={{ backgroundColor: 'var(--bg-input)', borderRadius: 'var(--radius)' }}
             />
           </div>
-        ))}
+          <div className="space-y-1.5 mt-4">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <div
+                  className="w-7 h-2"
+                  style={{ backgroundColor: 'var(--bg-input)' }}
+                />
+                <div
+                  className="flex-1 h-2"
+                  style={{ backgroundColor: 'var(--bg-input)' }}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   )

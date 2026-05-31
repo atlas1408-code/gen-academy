@@ -1,32 +1,50 @@
 @import "tailwindcss";
 
-/* ── Vibrant Theme (default) — Pokémon Classic ── */
+/* ── Pokédex Theme (default) ── */
 :root {
-  --bg-primary: #0f172a;
-  --bg-secondary: #121824;
-  --bg-card: #1a2332;
-  --bg-card-hover: #1e2b3d;
-  --bg-input: #162031;
-  --border-color: #2a3a52;
+  /* Device shell */
+  --shell-bg: #b83030;
+  --shell-dark: #8b2020;
+  --shell-highlight: #d44040;
+  --shell-border: #7a1a1a;
+
+  /* Screen interior */
+  --bg-primary: #0c1425;
+  --bg-secondary: #101b30;
+  --bg-card: #0e1a2e;
+  --bg-card-hover: #132240;
+  --bg-input: #0a1220;
+  --border-color: #1e3a5a;
   --border-style: solid;
-  --text-primary: #e2e8f0;
-  --text-secondary: #94a3b8;
-  --text-muted: #64748b;
-  --accent: #3b4cca;
-  --accent-hover: #2d3eb5;
-  --accent-glow: rgba(59, 76, 202, 0.35);
+
+  /* Text */
+  --text-primary: #d0e8d0;
+  --text-secondary: #7ab87a;
+  --text-muted: #4a7a4a;
+  --text-highlight: #ffcb05;
+  --text-danger: #ff5555;
+
+  /* Accents */
+  --accent: #3b8cca;
+  --accent-hover: #2d7ab5;
+  --accent-glow: rgba(59, 140, 202, 0.3);
   --accent-yellow: #ffcb05;
-  --danger: #ef4444;
-  --success: #22c55e;
-  --warning: #eab308;
-  --font-family: "Inter", system-ui, -apple-system, sans-serif;
+  --danger: #ff5555;
+  --success: #55ff55;
+  --warning: #ffcb05;
+
+  /* Typography */
+  --font-family: "VT323", "Courier New", monospace;
   --font-pixel: "Press Start 2P", monospace;
-  --font-retro: "VT323", monospace;
-  --shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
-  --radius: 0.75rem;
+  --font-mono: "VT323", "Courier New", monospace;
+
+  /* Effects */
+  --shadow: none;
+  --radius: 2px;
+  --screen-glow: 0 0 15px rgba(80, 200, 120, 0.05) inset;
 }
 
-/* ── Wireframe Theme — Blueprint Drafting ── */
+/* ── Wireframe / Blueprint Mode ── */
 .wireframe {
   --bg-primary: #1a1a1a;
   --bg-secondary: #1e1e1e;
@@ -38,6 +56,8 @@
   --text-primary: #cccccc;
   --text-secondary: #999999;
   --text-muted: #666666;
+  --text-highlight: #aaaaaa;
+  --text-danger: #999999;
   --accent: #888888;
   --accent-hover: #777777;
   --accent-glow: transparent;
@@ -45,17 +65,18 @@
   --danger: #999999;
   --success: #999999;
   --warning: #999999;
+  --shell-bg: #333333;
+  --shell-dark: #2a2a2a;
+  --shell-highlight: #404040;
+  --shell-border: #222222;
   --font-family: "Fira Mono", "Courier New", monospace;
   --shadow: none;
-  --radius: 0.25rem;
+  --radius: 2px;
+  --screen-glow: none;
 }
 
-.wireframe body,
-.wireframe {
-  background-image:
-    linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-  background-size: 24px 24px;
+.wireframe .pokedex-screen::before {
+  display: none;
 }
 
 /* ── Base ── */
@@ -67,48 +88,270 @@
 
 body {
   margin: 0;
-  background-color: var(--bg-primary);
+  background-color: #1a1a2e;
   color: var(--text-primary);
   font-family: var(--font-family);
   -webkit-font-smoothing: antialiased;
   min-height: 100vh;
+  font-size: 18px;
 }
 
 /* ── Scrollbar ── */
 ::-webkit-scrollbar {
-  width: 6px;
+  width: 4px;
 }
 ::-webkit-scrollbar-track {
-  background: var(--bg-secondary);
+  background: var(--bg-primary);
 }
 ::-webkit-scrollbar-thumb {
   background: var(--border-color);
-  border-radius: 3px;
+  border-radius: 2px;
 }
 
-/* ── Dialog box for combat log ── */
-.dialog-box {
-  border: 3px double var(--border-color);
+/* ── Pokédex Device Shell ── */
+.pokedex-shell {
+  max-width: 900px;
+  margin: 20px auto;
+  background: var(--shell-bg);
+  border: 6px solid var(--shell-dark);
+  border-radius: 12px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.4);
+}
+
+/* ── Device Header (Lens + LEDs) ── */
+.pokedex-header {
+  background: var(--shell-bg);
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 3px solid var(--shell-dark);
+}
+
+.pokedex-lens {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #9de5ff, #2890d0 40%, #1a5a8a 70%);
+  border: 4px solid #ddd;
+  box-shadow:
+    0 0 8px rgba(40, 144, 208, 0.5),
+    inset 0 0 10px rgba(255, 255, 255, 0.2);
+  flex-shrink: 0;
+}
+
+.pokedex-leds {
+  display: flex;
+  gap: 6px;
+}
+
+.pokedex-led {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.3);
+}
+
+.pokedex-led--red {
+  background: #ff4444;
+  box-shadow: 0 0 4px rgba(255, 68, 68, 0.6);
+}
+.pokedex-led--yellow {
+  background: #ffcc00;
+  box-shadow: 0 0 4px rgba(255, 204, 0, 0.6);
+}
+.pokedex-led--green {
+  background: #44ff44;
+  box-shadow: 0 0 4px rgba(68, 255, 68, 0.6);
+}
+
+/* ── Screen Area ── */
+.pokedex-screen {
+  background: var(--bg-primary);
+  margin: 8px;
+  border: 3px solid #0a0f1a;
   border-radius: 4px;
+  position: relative;
+  box-shadow: var(--screen-glow);
+  overflow: hidden;
+}
+
+/* Scan-line overlay */
+.pokedex-screen::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.08) 2px,
+    rgba(0, 0, 0, 0.08) 4px
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* ── Screen Header Bar ── */
+.screen-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+}
+
+.screen-header__title {
+  font-family: var(--font-pixel);
+  font-size: 0.5rem;
+  color: var(--text-highlight);
+}
+
+.screen-header__subtitle {
+  font-family: var(--font-pixel);
+  font-size: 0.45rem;
+  color: var(--text-muted);
+}
+
+/* Power indicator */
+.power-indicator {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-pixel);
+  font-size: 0.4rem;
+  color: var(--text-muted);
+}
+
+.power-bar {
+  display: flex;
+  gap: 1px;
+}
+
+.power-bar__segment {
+  width: 4px;
+  height: 8px;
+  background: var(--success);
+}
+
+.power-bar__segment--empty {
+  background: var(--border-color);
+}
+
+/* ── Footer: Nav + decorative controls in one compact bar ── */
+.pokedex-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+  background: var(--shell-bg);
+  border-top: 3px solid var(--shell-dark);
+}
+
+.pokedex-nav {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pokedex-nav__btn {
+  font-family: var(--font-pixel);
+  font-size: 0.55rem;
+  text-transform: uppercase;
+  padding: 6px 16px;
+  border: 2px solid var(--shell-dark);
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.15s;
+  letter-spacing: 0.1em;
+  background: var(--shell-dark);
+  color: #ddd;
+}
+
+.pokedex-nav__btn:hover {
+  background: var(--shell-highlight);
+}
+
+.pokedex-nav__btn--active {
+  background: var(--bg-primary);
+  color: var(--text-highlight);
+  border-color: var(--accent);
+}
+
+/* ── Decorative D-pad + Buttons (compact) ── */
+.dpad {
+  width: 36px;
+  height: 36px;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.dpad__horizontal,
+.dpad__vertical {
+  position: absolute;
+  background: #2a2a2a;
+  border-radius: 2px;
+}
+
+.dpad__horizontal {
+  width: 36px;
+  height: 12px;
+  top: 12px;
+  left: 0;
+}
+
+.dpad__vertical {
+  width: 12px;
+  height: 36px;
+  top: 0;
+  left: 12px;
+}
+
+.ab-buttons {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+  flex-shrink: 0;
+}
+
+.ab-btn {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-pixel);
+  font-size: 0.35rem;
+  color: #fff;
+  border: 2px solid rgba(0, 0, 0, 0.3);
+}
+
+.ab-btn--b {
+  background: #3060a0;
+  margin-bottom: 4px;
+}
+
+.ab-btn--a {
+  background: #a03030;
+}
+
+/* ── Section divider ── */
+.screen-divider {
+  height: 12px;
+  background: var(--shell-bg);
+  margin: 0 -12px;
+  border-top: 2px solid var(--shell-dark);
+  border-bottom: 2px solid var(--shell-dark);
   position: relative;
 }
 
-.dialog-box::after {
-  content: '▼';
-  position: absolute;
-  bottom: 6px;
-  right: 10px;
-  font-size: 10px;
-  color: var(--text-muted);
-  animation: blink-cursor 1s step-end infinite;
-}
-
-@keyframes blink-cursor {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0; }
-}
-
-/* ── Battle platform ── */
+/* ── Battle platform glow ── */
 .battle-platform {
   position: relative;
 }
@@ -116,15 +359,70 @@ body {
 .battle-platform::after {
   content: '';
   position: absolute;
-  bottom: -8px;
+  bottom: 0;
   left: 50%;
   transform: translateX(-50%);
-  width: 80%;
-  height: 16px;
-  background: radial-gradient(ellipse at center, rgba(59, 76, 202, 0.2) 0%, transparent 70%);
+  width: 60%;
+  height: 4px;
+  background: var(--accent);
+  opacity: 0.3;
   border-radius: 50%;
+  filter: blur(3px);
 }
 
-.wireframe .battle-platform::after {
-  background: radial-gradient(ellipse at center, rgba(136, 136, 136, 0.15) 0%, transparent 70%);
+.screen-divider::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 40px;
+  height: 4px;
+  background: var(--shell-dark);
+  border-radius: 2px;
+}
+
+/* ── Data Panel (generic screen panel) ── */
+.data-panel {
+  background: var(--bg-card);
+  border: 1px var(--border-style) var(--border-color);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+}
+
+/* ── Stat bar (simplified, game-style) ── */
+.stat-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 18px;
+}
+
+.stat-label {
+  width: 28px;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  text-align: right;
+  text-transform: uppercase;
+}
+
+.stat-track {
+  flex: 1;
+  height: 6px;
+  background: var(--border-color);
+  position: relative;
+}
+
+.stat-fill {
+  height: 100%;
+  transition: width 0.4s ease-out;
+}
+
+.stat-value {
+  width: 28px;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  text-align: right;
 }

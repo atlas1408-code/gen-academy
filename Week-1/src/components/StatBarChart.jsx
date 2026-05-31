@@ -1,5 +1,3 @@
-import { motion } from 'framer-motion'
-
 const STAT_LABELS = {
   hp: 'HP',
   attack: 'ATK',
@@ -22,33 +20,22 @@ const MAX_STAT = 255
 
 export default function StatBarChart({ stats }) {
   return (
-    <div className="space-y-2">
+    <div className="space-y-1">
       {stats.map((stat) => (
-        <div key={stat.name} className="flex items-center gap-3">
-          <span
-            className="w-8 text-xs font-bold text-right"
-            style={{ color: 'var(--text-secondary)' }}
-          >
+        <div key={stat.name} className="stat-row">
+          <span className="stat-label">
             {STAT_LABELS[stat.name] || stat.name}
           </span>
-          <div
-            className="flex-1 h-3 rounded-full overflow-hidden"
-            style={{ backgroundColor: 'var(--bg-input)' }}
-          >
-            <motion.div
-              className="h-full rounded-full"
-              style={{ backgroundColor: STAT_COLORS[stat.name] || 'var(--accent)' }}
-              initial={{ width: 0 }}
-              animate={{ width: `${(stat.value / MAX_STAT) * 100}%` }}
-              transition={{ duration: 0.6, ease: 'easeOut' }}
+          <div className="stat-track">
+            <div
+              className="stat-fill"
+              style={{
+                width: `${(stat.value / MAX_STAT) * 100}%`,
+                backgroundColor: STAT_COLORS[stat.name] || 'var(--accent)',
+              }}
             />
           </div>
-          <span
-            className="w-8 text-xs font-bold text-right"
-            style={{ color: 'var(--text-primary)' }}
-          >
-            {stat.value}
-          </span>
+          <span className="stat-value">{stat.value}</span>
         </div>
       ))}
     </div>

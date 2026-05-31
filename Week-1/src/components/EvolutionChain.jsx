@@ -18,10 +18,10 @@ function flattenChain(chain) {
 
 function getTriggerLabel(trigger) {
   if (!trigger) return ''
-  if (trigger.min_level) return `Lv. ${trigger.min_level}`
-  if (trigger.item) return trigger.item.name.replace(/-/g, ' ')
-  if (trigger.min_happiness) return `Happiness ${trigger.min_happiness}`
-  if (trigger.trigger?.name === 'trade') return 'Trade'
+  if (trigger.min_level) return `LV.${trigger.min_level}`
+  if (trigger.item) return trigger.item.name.replace(/-/g, ' ').toUpperCase()
+  if (trigger.min_happiness) return `HAPPY ${trigger.min_happiness}`
+  if (trigger.trigger?.name === 'trade') return 'TRADE'
   return ''
 }
 
@@ -34,24 +34,29 @@ function EvolutionStage({ name, isCurrent, onSelect }) {
     <button
       onClick={() => onSelect(name)}
       className="flex flex-col items-center gap-1 cursor-pointer transition-transform hover:scale-105"
-      style={{ opacity: isCurrent ? 1 : 0.6 }}
+      style={{ opacity: isCurrent ? 1 : 0.5 }}
     >
       <div
-        className="w-16 h-16 rounded-full flex items-center justify-center"
+        className="w-14 h-14 flex items-center justify-center"
         style={{
           backgroundColor: 'var(--bg-input)',
           border: isCurrent
             ? '2px solid var(--accent)'
             : '1px var(--border-style) var(--border-color)',
+          borderRadius: 'var(--radius)',
         }}
       >
         {sprite && (
-          <img src={sprite} alt={name} className="w-12 h-12 object-contain" />
+          <img src={sprite} alt={name} className="w-10 h-10 object-contain" />
         )}
       </div>
       <span
-        className="text-xs capitalize font-medium"
-        style={{ color: isCurrent ? 'var(--text-primary)' : 'var(--text-muted)' }}
+        className="text-xs uppercase"
+        style={{
+          color: isCurrent ? 'var(--text-highlight)' : 'var(--text-muted)',
+          fontFamily: 'var(--font-mono)',
+          fontSize: '0.7rem',
+        }}
       >
         {name}
       </span>
@@ -70,17 +75,14 @@ export default function EvolutionChain({ pokemonName, onSelect }) {
   if (stages.length <= 1) return null
 
   return (
-    <div
-      className="rounded-xl p-4"
-      style={{
-        backgroundColor: 'var(--bg-card)',
-        border: '1px var(--border-style) var(--border-color)',
-        boxShadow: 'var(--shadow)',
-      }}
-    >
+    <div className="data-panel">
       <h4
-        className="text-xs font-bold uppercase tracking-wider mb-4"
-        style={{ color: 'var(--text-secondary)' }}
+        className="mb-3 uppercase tracking-[0.15em]"
+        style={{
+          color: 'var(--text-highlight)',
+          fontFamily: 'var(--font-pixel)',
+          fontSize: '0.5rem',
+        }}
       >
         Evolution Chain
       </h4>
@@ -90,15 +92,22 @@ export default function EvolutionChain({ pokemonName, onSelect }) {
             {i > 0 && (
               <div className="flex flex-col items-center">
                 <span
-                  className="text-lg"
-                  style={{ color: 'var(--text-muted)' }}
+                  className="text-sm"
+                  style={{
+                    color: 'var(--text-muted)',
+                    fontFamily: 'var(--font-mono)',
+                  }}
                 >
-                  →
+                  &gt;&gt;
                 </span>
                 {getTriggerLabel(stage.trigger) && (
                   <span
                     className="text-xs"
-                    style={{ color: 'var(--text-muted)' }}
+                    style={{
+                      color: 'var(--text-muted)',
+                      fontFamily: 'var(--font-pixel)',
+                      fontSize: '0.4rem',
+                    }}
                   >
                     {getTriggerLabel(stage.trigger)}
                   </span>

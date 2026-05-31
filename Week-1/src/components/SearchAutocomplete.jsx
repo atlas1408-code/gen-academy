@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { usePokemonList } from '../hooks/usePokemon'
 
-export default function SearchAutocomplete({ onSelect, placeholder = 'Search Pokémon...' }) {
+export default function SearchAutocomplete({ onSelect, placeholder = 'SEARCH POKEMON...' }) {
   const [query, setQuery] = useState('')
   const [isOpen, setIsOpen] = useState(false)
   const [highlightIndex, setHighlightIndex] = useState(-1)
@@ -66,31 +66,34 @@ export default function SearchAutocomplete({ onSelect, placeholder = 'Search Pok
         onFocus={() => query.length >= 1 && setIsOpen(true)}
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
-        className="w-full px-4 py-2.5 rounded-lg text-sm outline-none transition-colors"
+        className="w-full px-3 py-2 text-sm outline-none uppercase tracking-wider"
         style={{
           backgroundColor: 'var(--bg-input)',
           color: 'var(--text-primary)',
-          border: '1px var(--border-style) var(--border-color)',
+          border: '2px var(--border-style) var(--border-color)',
+          borderRadius: 'var(--radius)',
+          fontFamily: 'var(--font-mono)',
         }}
       />
       {isOpen && filtered.length > 0 && (
         <ul
           ref={listRef}
-          className="absolute z-50 w-full mt-1 rounded-lg overflow-auto max-h-60 py-1"
+          className="absolute z-50 w-full mt-1 overflow-auto max-h-60"
           style={{
             backgroundColor: 'var(--bg-card)',
-            border: '1px solid var(--border-color)',
-            boxShadow: 'var(--shadow)',
+            border: '2px solid var(--border-color)',
+            borderRadius: 'var(--radius)',
           }}
         >
           {filtered.map((name, i) => (
             <li
               key={name}
               onClick={() => handleSelect(name)}
-              className="px-4 py-2 text-sm cursor-pointer capitalize"
+              className="px-3 py-1.5 text-sm cursor-pointer uppercase tracking-wider"
               style={{
                 backgroundColor: i === highlightIndex ? 'var(--bg-card-hover)' : 'transparent',
-                color: 'var(--text-primary)',
+                color: i === highlightIndex ? 'var(--text-highlight)' : 'var(--text-primary)',
+                fontFamily: 'var(--font-mono)',
               }}
               onMouseEnter={() => setHighlightIndex(i)}
             >

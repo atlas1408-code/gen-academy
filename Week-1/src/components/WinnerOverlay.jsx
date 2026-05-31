@@ -35,60 +35,76 @@ export default function WinnerOverlay({ winner, analysis, onDismiss }) {
           {/* Backdrop */}
           <motion.div
             className="absolute inset-0"
-            style={{ backgroundColor: 'rgba(0, 0, 0, 0.75)', backdropFilter: 'blur(4px)' }}
+            style={{ backgroundColor: 'rgba(0, 0, 0, 0.85)' }}
             onClick={onDismiss}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
           />
 
-          {/* Modal */}
+          {/* Device-style modal */}
           <motion.div
-            className="relative rounded-2xl p-8 text-center max-w-md w-full"
+            className="relative p-6 text-center max-w-sm w-full"
             style={{
-              backgroundColor: 'var(--bg-card)',
-              border: '2px solid var(--accent-yellow)',
-              boxShadow: '0 0 60px rgba(255, 203, 5, 0.2), 0 0 120px rgba(255, 203, 5, 0.08)',
+              backgroundColor: 'var(--bg-primary)',
+              border: '3px solid var(--shell-dark)',
+              borderRadius: 'var(--radius)',
+              boxShadow: '0 0 40px rgba(255, 203, 5, 0.15), inset 0 0 15px rgba(80, 200, 120, 0.05)',
             }}
-            initial={{ opacity: 0, scale: 0.7, y: 30 }}
+            initial={{ opacity: 0, scale: 0.8, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+            exit={{ opacity: 0, scale: 0.9, y: 10 }}
+            transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
           >
-            {/* Victory badge */}
+            {/* Top accent bar */}
+            <div
+              className="absolute top-0 left-0 right-0 h-1"
+              style={{ backgroundColor: 'var(--accent-yellow)' }}
+            />
+
             <motion.div
-              className="text-5xl mb-4"
-              initial={{ scale: 0, rotate: -180 }}
-              animate={{ scale: 1, rotate: 0 }}
-              transition={{ duration: 0.6, delay: 0.2, type: 'spring', bounce: 0.5 }}
+              className="mb-3 uppercase tracking-[0.3em]"
+              style={{
+                color: 'var(--text-muted)',
+                fontFamily: 'var(--font-pixel)',
+                fontSize: '0.4rem',
+              }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.2 }}
             >
-              🏆
+              BATTLE RESULT
             </motion.div>
 
             {artwork && (
               <motion.img
                 src={artwork}
                 alt={winner.name}
-                className="w-36 h-36 mx-auto mb-4 object-contain"
-                style={{ filter: 'drop-shadow(0 0 20px rgba(255, 203, 5, 0.3))' }}
-                initial={{ y: 30, opacity: 0 }}
+                className="w-32 h-32 mx-auto mb-3 object-contain"
+                style={{ filter: 'drop-shadow(0 0 12px rgba(255, 203, 5, 0.2))' }}
+                initial={{ y: 20, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
-                transition={{ duration: 0.5, delay: 0.3 }}
+                transition={{ duration: 0.4, delay: 0.3 }}
               />
             )}
 
             <motion.h3
-              className="text-3xl font-black uppercase mb-1 capitalize"
-              style={{ color: 'var(--accent-yellow)', fontFamily: 'var(--font-pixel)', fontSize: '1rem', lineHeight: '1.8' }}
-              initial={{ y: 20, opacity: 0 }}
+              className="uppercase mb-2"
+              style={{
+                color: 'var(--accent-yellow)',
+                fontFamily: 'var(--font-pixel)',
+                fontSize: '0.7rem',
+                lineHeight: '1.8',
+              }}
+              initial={{ y: 15, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ duration: 0.4, delay: 0.4 }}
             >
-              {winner.name} Wins!
+              {winner.name} WINS!
             </motion.h3>
 
             <motion.div
-              className="w-16 h-0.5 mx-auto mb-4"
-              style={{ backgroundColor: 'var(--accent-yellow)' }}
+              className="w-12 h-0.5 mx-auto mb-3"
+              style={{ backgroundColor: 'var(--accent)' }}
               initial={{ scaleX: 0 }}
               animate={{ scaleX: 1 }}
               transition={{ duration: 0.4, delay: 0.5 }}
@@ -96,9 +112,12 @@ export default function WinnerOverlay({ winner, analysis, onDismiss }) {
 
             {analysis && (
               <motion.p
-                className="text-sm leading-relaxed mb-6"
-                style={{ color: 'var(--text-secondary)' }}
-                initial={{ y: 15, opacity: 0 }}
+                className="text-xs leading-relaxed mb-4"
+                style={{
+                  color: 'var(--text-secondary)',
+                  fontFamily: 'var(--font-mono)',
+                }}
+                initial={{ y: 10, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ duration: 0.4, delay: 0.6 }}
               >
@@ -108,18 +127,22 @@ export default function WinnerOverlay({ winner, analysis, onDismiss }) {
 
             <motion.button
               onClick={onDismiss}
-              className="px-6 py-2 rounded-lg text-sm font-semibold cursor-pointer transition-colors"
+              className="px-6 py-1.5 text-xs font-bold uppercase tracking-wider cursor-pointer transition-colors"
               style={{
                 backgroundColor: 'var(--accent)',
                 color: '#fff',
+                border: 'none',
+                borderRadius: 'var(--radius)',
+                fontFamily: 'var(--font-pixel)',
+                fontSize: '0.45rem',
               }}
-              initial={{ y: 10, opacity: 0 }}
+              initial={{ y: 8, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ duration: 0.3, delay: 0.7 }}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
-              Close
+              DISMISS
             </motion.button>
           </motion.div>
         </motion.div>

@@ -6,33 +6,37 @@ export default function HealthBar({ name, current, max }) {
 
   return (
     <div
-      className="rounded-lg p-3 flex-1"
+      className="p-2"
       style={{
-        backgroundColor: 'var(--bg-card)',
+        backgroundColor: 'var(--bg-secondary)',
         border: '1px var(--border-style) var(--border-color)',
+        borderRadius: 'var(--radius)',
       }}
     >
       <div className="flex justify-between mb-1">
         <span
-          className="text-sm font-bold capitalize"
-          style={{ color: 'var(--text-primary)' }}
+          className="text-xs font-bold uppercase"
+          style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-mono)' }}
         >
           {name}
         </span>
         <span
-          className="text-sm font-mono"
-          style={{ color: 'var(--text-secondary)' }}
+          className="text-xs"
+          style={{ color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)' }}
         >
           {current}/{max}
         </span>
       </div>
       <div
-        className="h-4 rounded-full overflow-hidden"
-        style={{ backgroundColor: 'var(--bg-input)' }}
+        className="h-3 overflow-hidden"
+        style={{
+          backgroundColor: 'var(--bg-input)',
+          borderRadius: 'var(--radius)',
+        }}
       >
         <motion.div
-          className="h-full rounded-full"
-          style={{ backgroundColor: color }}
+          className="h-full"
+          style={{ backgroundColor: color, borderRadius: 'var(--radius)' }}
           animate={{ width: `${pct}%` }}
           transition={{ duration: 0.4, ease: 'easeOut' }}
         />

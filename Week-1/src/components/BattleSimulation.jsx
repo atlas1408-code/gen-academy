@@ -59,7 +59,6 @@ export default function BattleSimulation({ pokemon1, pokemon2 }) {
       if (idx >= result.events.length) {
         clearInterval(timerRef.current)
         setIsRunning(false)
-        // Show winner modal after a short dramatic pause
         setTimeout(() => setShowWinner(true), 600)
         return
       }
@@ -90,33 +89,32 @@ export default function BattleSimulation({ pokemon1, pokemon2 }) {
   const resultEvent = battleState?.events?.find((e) => e.type === 'result')
 
   return (
-    <div className="mt-8 space-y-4">
+    <div className="mt-6 space-y-4">
       <div className="flex justify-center">
         <button
           onClick={runBattle}
           disabled={!canRun || isRunning}
-          className="px-8 py-3 rounded-lg text-sm font-bold uppercase tracking-wider transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+          className="px-8 py-2.5 text-xs font-bold uppercase tracking-[0.2em] cursor-pointer transition-all disabled:opacity-40 disabled:cursor-not-allowed"
           style={{
             backgroundColor: canRun && !isRunning ? 'var(--accent)' : 'var(--bg-input)',
             color: '#fff',
-            boxShadow: canRun && !isRunning ? '0 0 20px var(--accent-glow)' : 'none',
+            border: '2px solid',
+            borderColor: canRun && !isRunning ? 'var(--accent)' : 'var(--border-color)',
+            borderRadius: 'var(--radius)',
+            fontFamily: 'var(--font-pixel)',
+            fontSize: '0.55rem',
+            boxShadow: canRun && !isRunning ? '0 0 15px var(--accent-glow)' : 'none',
           }}
         >
-          {isRunning ? 'Simulating...' : movesLoading ? 'Loading moves...' : '⚔ Run Simulation'}
+          {isRunning ? 'SIMULATING...' : movesLoading ? 'LOADING MOVES...' : 'RUN SIMULATION'}
         </button>
       </div>
 
       {battleState && (
         <>
-          {/* Battle stage: sprites with floating HP bars */}
-          <div
-            className="rounded-xl p-6"
-            style={{
-              backgroundColor: 'var(--bg-card)',
-              border: '1px var(--border-style) var(--border-color)',
-            }}
-          >
-            <div className="flex gap-6 items-end justify-center">
+          {/* Battle stage */}
+          <div className="data-panel">
+            <div className="flex gap-4 items-end justify-center">
               {/* Combatant 1 */}
               <div className="flex-1 max-w-[200px]">
                 <HealthBar
@@ -124,22 +122,23 @@ export default function BattleSimulation({ pokemon1, pokemon2 }) {
                   current={currentHp1}
                   max={battleState.hp1Max}
                 />
-                <div className="battle-platform flex justify-center mt-3 pb-3">
+                <div className="flex justify-center mt-2 pb-2">
                   <img
                     src={pokemon1.sprites?.other?.['official-artwork']?.front_default}
                     alt={pokemon1.name}
-                    className="w-28 h-28 object-contain drop-shadow-lg"
+                    className="w-24 h-24 object-contain"
+                    style={{ filter: 'drop-shadow(0 0 6px rgba(80, 200, 120, 0.15))' }}
                   />
                 </div>
               </div>
 
               {/* VS divider */}
               <div
-                className="text-2xl font-black pb-6"
+                className="pb-6 uppercase"
                 style={{
                   color: 'var(--accent-yellow)',
                   fontFamily: 'var(--font-pixel)',
-                  fontSize: '0.8rem',
+                  fontSize: '0.7rem',
                 }}
               >
                 VS
@@ -152,11 +151,12 @@ export default function BattleSimulation({ pokemon1, pokemon2 }) {
                   current={currentHp2}
                   max={battleState.hp2Max}
                 />
-                <div className="battle-platform flex justify-center mt-3 pb-3">
+                <div className="flex justify-center mt-2 pb-2">
                   <img
                     src={pokemon2.sprites?.other?.['official-artwork']?.front_default}
                     alt={pokemon2.name}
-                    className="w-28 h-28 object-contain drop-shadow-lg"
+                    className="w-24 h-24 object-contain"
+                    style={{ filter: 'drop-shadow(0 0 6px rgba(80, 200, 120, 0.15))' }}
                   />
                 </div>
               </div>
