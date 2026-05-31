@@ -1,0 +1,10 @@
+services:
+  pokearena:
+    build:
+      context: .
+      args:
+        VITE_POKEAPI_BASE_URL: ${VITE_POKEAPI_BASE_URL:-https://pokeapi.co/api/v2}
+    ports:
+      - "3000:80"
+    env_file:
+      - .env

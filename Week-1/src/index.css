@@ -1,0 +1,75 @@
+@import "tailwindcss";
+
+/* ── Vibrant Theme (default) ── */
+:root {
+  --bg-primary: #0f0a1e;
+  --bg-secondary: #150f2a;
+  --bg-card: #1a1235;
+  --bg-card-hover: #221a42;
+  --bg-input: #1e1640;
+  --border-color: #2d2255;
+  --border-style: solid;
+  --text-primary: #e2e8f0;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --accent: #7c3aed;
+  --accent-hover: #6d28d9;
+  --accent-glow: rgba(124, 58, 237, 0.3);
+  --danger: #ef4444;
+  --success: #22c55e;
+  --warning: #eab308;
+  --font-family: "Inter", system-ui, -apple-system, sans-serif;
+  --shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+  --radius: 0.75rem;
+}
+
+/* ── Wireframe Theme ── */
+.wireframe {
+  --bg-primary: #1a1a1a;
+  --bg-secondary: #1e1e1e;
+  --bg-card: #222222;
+  --bg-card-hover: #2a2a2a;
+  --bg-input: #252525;
+  --border-color: #555555;
+  --border-style: dashed;
+  --text-primary: #cccccc;
+  --text-secondary: #999999;
+  --text-muted: #666666;
+  --accent: #888888;
+  --accent-hover: #777777;
+  --accent-glow: transparent;
+  --danger: #999999;
+  --success: #999999;
+  --warning: #999999;
+  --font-family: "Courier New", monospace;
+  --shadow: none;
+  --radius: 0.25rem;
+}
+
+/* ── Base ── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-family);
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 3px;
+}
