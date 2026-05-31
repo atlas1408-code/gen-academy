@@ -3,6 +3,7 @@ import { usePokemon } from '../hooks/usePokemon'
 import SearchAutocomplete from '../components/SearchAutocomplete'
 import PokemonCard from '../components/PokemonCard'
 import MovesGrid from '../components/MovesGrid'
+import EvolutionChain from '../components/EvolutionChain'
 import { CardSkeleton } from '../components/LoadingSkeleton'
 
 export default function Explorer() {
@@ -44,9 +45,15 @@ export default function Explorer() {
       )}
 
       {pokemon && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <PokemonCard pokemon={pokemon} />
-          <MovesGrid pokemon={pokemon} />
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <PokemonCard pokemon={pokemon} />
+            <MovesGrid pokemon={pokemon} />
+          </div>
+          <EvolutionChain
+            pokemonName={pokemon.name}
+            onSelect={setSelectedName}
+          />
         </div>
       )}
     </div>

@@ -1,5 +1,8 @@
 import { useQuery, useQueries } from '@tanstack/react-query'
-import { fetchPokemon, fetchMove, fetchTypeData, fetchPokemonList } from '../api/pokeapi'
+import {
+  fetchPokemon, fetchMove, fetchTypeData, fetchPokemonList,
+  fetchPokemonSpecies, fetchAbility, fetchEvolutionChain,
+} from '../api/pokeapi'
 
 export function usePokemon(name) {
   return useQuery({
@@ -48,6 +51,32 @@ const ALL_TYPES = [
   'fighting', 'poison', 'ground', 'flying', 'psychic', 'bug',
   'rock', 'ghost', 'dragon', 'dark', 'steel', 'fairy',
 ]
+
+export function usePokemonSpecies(name) {
+  return useQuery({
+    queryKey: ['pokemon-species', name],
+    queryFn: () => fetchPokemonSpecies(name),
+    enabled: !!name,
+  })
+}
+
+export function useAbilities(abilityNames) {
+  return useQueries({
+    queries: (abilityNames || []).map((name) => ({
+      queryKey: ['ability', name],
+      queryFn: () => fetchAbility(name),
+      enabled: !!name,
+    })),
+  })
+}
+
+export function useEvolutionChain(url) {
+  return useQuery({
+    queryKey: ['evolution-chain', url],
+    queryFn: () => fetchEvolutionChain(url),
+    enabled: !!url,
+  })
+}
 
 export function useAllTypes() {
   return useQueries({

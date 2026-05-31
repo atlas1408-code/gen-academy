@@ -77,9 +77,9 @@ export default function BattleArena() {
       {bothSelected && (
         <>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <PokemonCard pokemon={pokemon1} />
+            <PokemonCard pokemon={pokemon1} compact />
             <RadarChart pokemon1={pokemon1} pokemon2={pokemon2} />
-            <PokemonCard pokemon={pokemon2} />
+            <PokemonCard pokemon={pokemon2} compact />
           </div>
 
           <BattleSimulation pokemon1={pokemon1} pokemon2={pokemon2} />

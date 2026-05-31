@@ -21,3 +21,15 @@ export function fetchTypeData(type) {
 export function fetchPokemonList(limit = 1302) {
   return fetchJson(`${BASE_URL}/pokemon?limit=${limit}&offset=0`)
 }
+
+export function fetchPokemonSpecies(nameOrId) {
+  return fetchJson(`${BASE_URL}/pokemon-species/${nameOrId}`)
+}
+
+export function fetchAbility(nameOrId) {
+  return fetchJson(`${BASE_URL}/ability/${nameOrId}`)
+}
+
+export function fetchEvolutionChain(url) {
+  return fetchJson(url)
+}

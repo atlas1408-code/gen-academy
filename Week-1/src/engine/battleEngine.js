@@ -1,4 +1,5 @@
 import { getEffectiveness } from '../utils/typeEffectiveness'
+import { narrateInitiative, narrateTurn, narrateAttack, narrateMiss } from '../utils/narrator'
 
 /**
  * Calculate actual HP at level 50 (simplified formula).
@@ -69,9 +70,11 @@ export function simulateBattle(pokemon1, pokemon2, moves1, moves2, typeChart) {
   let superEffectiveHits1 = 0
   let superEffectiveHits2 = 0
 
+  const firstName = first === 1 ? pokemon1.name : pokemon2.name
   events.push({
     type: 'initiative',
-    message: `${first === 1 ? pokemon1.name : pokemon2.name} goes first! (SPE ${first === 1 ? speed1 : speed2} vs ${first === 1 ? speed2 : speed1})`,
+    message: `${firstName} goes first! (SPE ${first === 1 ? speed1 : speed2} vs ${first === 1 ? speed2 : speed1})`,
+    narrative: narrateInitiative(firstName, first === 1 ? speed1 : speed2, first === 1 ? speed2 : speed1),
   })
 
   let turn = 0
@@ -79,7 +82,7 @@ export function simulateBattle(pokemon1, pokemon2, moves1, moves2, typeChart) {
 
   while (hp1 > 0 && hp2 > 0 && turn < MAX_TURNS) {
     turn++
-    events.push({ type: 'turn', turn })
+    events.push({ type: 'turn', turn, narrative: narrateTurn(turn) })
 
     const attackOrder = first === 1
       ? [
@@ -104,6 +107,7 @@ export function simulateBattle(pokemon1, pokemon2, moves1, moves2, typeChart) {
           attacker: attacker.name,
           move: move.name,
           message: `${attacker.name} used ${move.name.replace(/-/g, ' ')} — but it missed!`,
+          narrative: narrateMiss(attacker.name, move.name),
         })
         continue
       }
@@ -131,10 +135,15 @@ export function simulateBattle(pokemon1, pokemon2, moves1, moves2, typeChart) {
       else if (effectiveness === 0) effectivenessText = 'No effect!'
       else if (effectiveness < 1) effectivenessText = 'Not very effective...'
 
+      const defHpRemaining = side === 1 ? hp2 : hp1
+      const defHpMax = side === 1 ? hp2Max : hp1Max
+
       events.push({
         type: 'attack',
         attacker: attacker.name,
+        defender: defender.name,
         move: move.name,
+        moveType: move.type.name,
         damage,
         effectiveness,
         effectivenessText,
@@ -143,6 +152,7 @@ export function simulateBattle(pokemon1, pokemon2, moves1, moves2, typeChart) {
         hp1Max,
         hp2Max,
         message: `${attacker.name} → ${move.name.replace(/-/g, ' ')} (${damage} dmg)${effectivenessText ? ' ' + effectivenessText : ''}`,
+        narrative: narrateAttack(attacker.name, defender.name, move.name, damage, effectiveness, defHpRemaining, defHpMax),
       })
     }
   }

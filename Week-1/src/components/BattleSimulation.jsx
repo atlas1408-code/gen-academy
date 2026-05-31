@@ -12,7 +12,7 @@ export default function BattleSimulation({ pokemon1, pokemon2 }) {
   const [currentHp1, setCurrentHp1] = useState(0)
   const [currentHp2, setCurrentHp2] = useState(0)
   const [isRunning, setIsRunning] = useState(false)
-  const [isDone, setIsDone] = useState(false)
+  const [showWinner, setShowWinner] = useState(false)
   const timerRef = useRef(null)
 
   const typeQueries = useAllTypes()
@@ -49,7 +49,7 @@ export default function BattleSimulation({ pokemon1, pokemon2 }) {
     setCurrentHp1(result.hp1Max)
     setCurrentHp2(result.hp2Max)
     setIsRunning(true)
-    setIsDone(false)
+    setShowWinner(false)
 
     // Playback events with timed intervals
     let idx = 0
@@ -59,7 +59,8 @@ export default function BattleSimulation({ pokemon1, pokemon2 }) {
       if (idx >= result.events.length) {
         clearInterval(timerRef.current)
         setIsRunning(false)
-        setIsDone(true)
+        // Show winner modal after a short dramatic pause
+        setTimeout(() => setShowWinner(true), 600)
         return
       }
 
@@ -72,7 +73,7 @@ export default function BattleSimulation({ pokemon1, pokemon2 }) {
       }
 
       idx++
-    }, 500)
+    }, 1200)
   }, [pokemon1, pokemon2, typeChart, moves1Data, moves2Data])
 
   // Cleanup timer on unmount
@@ -86,7 +87,7 @@ export default function BattleSimulation({ pokemon1, pokemon2 }) {
     && selectTopMoves(moves1Data).length > 0
     && selectTopMoves(moves2Data).length > 0
 
-  const resultEvent = visibleEvents.find((e) => e.type === 'result')
+  const resultEvent = battleState?.events?.find((e) => e.type === 'result')
 
   return (
     <div className="mt-8 space-y-4">
@@ -121,15 +122,14 @@ export default function BattleSimulation({ pokemon1, pokemon2 }) {
           </div>
 
           <CombatLog events={visibleEvents} />
-
-          {isDone && resultEvent && (
-            <WinnerOverlay
-              winner={battleState.winner}
-              analysis={resultEvent.analysis}
-            />
-          )}
         </>
       )}
+
+      <WinnerOverlay
+        winner={showWinner ? battleState?.winner : null}
+        analysis={resultEvent?.analysis}
+        onDismiss={() => setShowWinner(false)}
+      />
     </div>
   )
 }
