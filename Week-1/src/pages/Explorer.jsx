@@ -12,22 +12,30 @@ export default function Explorer() {
 
   return (
     <div>
-      <div className="screen-divider mb-4" />
-
       <h2
-        className="mb-4 uppercase tracking-[0.2em]"
+        className="mb-3 uppercase tracking-[0.2em]"
         style={{
           color: 'var(--text-highlight)',
           fontFamily: 'var(--font-pixel)',
-          fontSize: '0.55rem',
+          fontSize: '0.5rem',
         }}
       >
         Pokemon Database
       </h2>
 
-      <div className="max-w-md mb-6">
+      <div className="max-w-md mb-5">
         <SearchAutocomplete onSelect={setSelectedName} />
       </div>
+
+      {!pokemon && !isLoading && !isError && (
+        <div className="empty-state">
+          <div className="empty-state__icon">?</div>
+          <p className="empty-state__text">
+            Enter a name to scan
+            <span className="empty-state__cursor" />
+          </p>
+        </div>
+      )}
 
       {isLoading && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

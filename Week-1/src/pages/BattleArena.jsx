@@ -38,14 +38,12 @@ export default function BattleArena() {
 
   return (
     <div>
-      <div className="screen-divider mb-4" />
-
       <h2
-        className="mb-4 uppercase tracking-[0.2em]"
+        className="mb-3 uppercase tracking-[0.2em]"
         style={{
           color: 'var(--text-highlight)',
           fontFamily: 'var(--font-pixel)',
-          fontSize: '0.55rem',
+          fontSize: '0.5rem',
         }}
       >
         Battle Arena

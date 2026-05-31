@@ -19,46 +19,46 @@ function App() {
         </div>
       </div>
 
-      {/* ── Main Screen ── */}
-      <div className="pokedex-screen">
-        {/* Screen header bar */}
-        <div className="screen-header">
-          <div>
-            <span className="screen-header__title">
-              <span style={{ color: 'var(--accent)' }}>Poke</span>Arena
-            </span>
-            <span className="screen-header__subtitle ml-2">Analytics v1.0</span>
-          </div>
-          <div className="power-indicator">
-            <span>PWR</span>
-            <div className="power-bar">
-              <div className="power-bar__segment" />
-              <div className="power-bar__segment" />
-              <div className="power-bar__segment" />
-              <div className="power-bar__segment power-bar__segment--empty" />
+      {/* ── Screen with dark bezel ── */}
+      <div className="pokedex-screen-bezel">
+        <div className="pokedex-screen">
+          {/* Screen header bar */}
+          <div className="screen-header">
+            <div>
+              <span className="screen-header__title">
+                <span style={{ color: 'var(--accent)' }}>Poke</span>Arena
+              </span>
+              <span className="screen-header__subtitle ml-2">Analytics v1.0</span>
+            </div>
+            <div className="power-indicator">
+              <span>PWR</span>
+              <div className="power-bar">
+                <div className="power-bar__segment" />
+                <div className="power-bar__segment" />
+                <div className="power-bar__segment" />
+                <div className="power-bar__segment power-bar__segment--empty" />
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Page content */}
-        <div className="p-4">
-          <Routes>
-            <Route path="/explorer" element={<Explorer />} />
-            <Route path="/battle" element={<BattleArena />} />
-            <Route path="*" element={<Navigate to="/explorer" replace />} />
-          </Routes>
+          {/* Page content */}
+          <div className="p-4">
+            <Routes>
+              <Route path="/explorer" element={<Explorer />} />
+              <Route path="/battle" element={<BattleArena />} />
+              <Route path="*" element={<Navigate to="/explorer" replace />} />
+            </Routes>
+          </div>
         </div>
       </div>
 
-      {/* ── Bottom bar: Nav + decorative controls ── */}
+      {/* ── Footer: Nav + decorative controls ── */}
       <div className="pokedex-footer">
-        {/* D-pad (decorative, compact) */}
-        <div className="dpad dpad--small">
+        <div className="dpad">
           <div className="dpad__horizontal" />
           <div className="dpad__vertical" />
         </div>
 
-        {/* Navigation */}
         <div className="pokedex-nav">
           <NavLink
             to="/explorer"
@@ -78,7 +78,6 @@ function App() {
           </NavLink>
         </div>
 
-        {/* A/B buttons (decorative, compact) */}
         <div className="ab-buttons">
           <div className="ab-btn ab-btn--b">B</div>
           <div className="ab-btn ab-btn--a">A</div>

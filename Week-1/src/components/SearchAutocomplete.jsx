@@ -55,26 +55,43 @@ export default function SearchAutocomplete({ onSelect, placeholder = 'SEARCH POK
 
   return (
     <div ref={wrapperRef} className="relative w-full">
-      <input
-        type="text"
-        value={query}
-        onChange={(e) => {
-          setQuery(e.target.value)
-          setIsOpen(true)
-          setHighlightIndex(-1)
-        }}
-        onFocus={() => query.length >= 1 && setIsOpen(true)}
-        onKeyDown={handleKeyDown}
-        placeholder={placeholder}
-        className="w-full px-3 py-2 text-sm outline-none uppercase tracking-wider"
+      <div
+        className="flex items-center gap-2 px-3 py-2"
         style={{
           backgroundColor: 'var(--bg-input)',
-          color: 'var(--text-primary)',
           border: '2px var(--border-style) var(--border-color)',
           borderRadius: 'var(--radius)',
-          fontFamily: 'var(--font-mono)',
         }}
-      />
+      >
+        <span
+          style={{
+            color: 'var(--text-muted)',
+            fontFamily: 'var(--font-mono)',
+            fontSize: '0.9rem',
+            flexShrink: 0,
+          }}
+        >
+          &gt;
+        </span>
+        <input
+          type="text"
+          value={query}
+          onChange={(e) => {
+            setQuery(e.target.value)
+            setIsOpen(true)
+            setHighlightIndex(-1)
+          }}
+          onFocus={() => query.length >= 1 && setIsOpen(true)}
+          onKeyDown={handleKeyDown}
+          placeholder={placeholder}
+          className="w-full text-sm outline-none uppercase tracking-wider bg-transparent"
+          style={{
+            color: 'var(--text-primary)',
+            fontFamily: 'var(--font-mono)',
+            caretColor: 'var(--success)',
+          }}
+        />
+      </div>
       {isOpen && filtered.length > 0 && (
         <ul
           ref={listRef}
@@ -83,6 +100,7 @@ export default function SearchAutocomplete({ onSelect, placeholder = 'SEARCH POK
             backgroundColor: 'var(--bg-card)',
             border: '2px solid var(--border-color)',
             borderRadius: 'var(--radius)',
+            boxShadow: '0 8px 24px rgba(0, 0, 0, 0.5)',
           }}
         >
           {filtered.map((name, i) => (

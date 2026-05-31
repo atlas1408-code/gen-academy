@@ -19,14 +19,15 @@ export default function ThemeToggle() {
   return (
     <button
       onClick={() => setIsWireframe((v) => !v)}
-      className="px-3 py-1 cursor-pointer uppercase tracking-wider transition-colors"
+      className="px-3 py-1.5 cursor-pointer uppercase tracking-wider transition-all"
       style={{
-        backgroundColor: 'var(--bg-input)',
-        color: 'var(--text-secondary)',
-        border: '1px var(--border-style) var(--border-color)',
-        borderRadius: 'var(--radius)',
+        background: 'linear-gradient(180deg, var(--shell-dark) 0%, var(--shell-bevel-dark) 100%)',
+        color: '#ccc',
+        border: '2px solid var(--shell-dark)',
+        borderRadius: '4px',
         fontFamily: 'var(--font-pixel)',
-        fontSize: '0.4rem',
+        fontSize: '0.38rem',
+        boxShadow: '0 2px 0 var(--shell-bevel-dark), inset 0 1px 0 rgba(255,255,255,0.08)',
       }}
       aria-label="Toggle theme"
     >
