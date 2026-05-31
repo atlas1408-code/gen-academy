@@ -188,10 +188,10 @@ function generateInsight(winner, loser, turns, speed1, speed2, totalDmg, superHi
     return `${winner.name}'s massive Speed advantage (${winnerSpeed} vs ${loserSpeed}) allowed it to strike first and secure the knockout.`
   }
   if (winnerDef >= 120 && turns >= 6) {
-    return `${winner.name}'s towering Defense (${winnerDef}) neutralized ${loser.name}'s attacks, wearing it down over ${turns} turns.`
+    return `${winner.name}'s towering Defense (${winnerDef}) neutralized ${loser.name}'s attacks, wearing it down over ${turns} turn${turns === 1 ? '' : 's'}.`
   }
   if (turns <= 3) {
-    return `${winner.name} closed out the match with overwhelming offensive pressure, finishing ${loser.name} in just ${turns} turns.`
+    return `${winner.name} closed out the match with overwhelming offensive pressure, finishing ${loser.name} in just ${turns} turn${turns === 1 ? '' : 's'}.`
   }
   return `${winner.name} outlasted ${loser.name} in a hard-fought ${turns}-turn battle, dealing ${totalDmg} total damage.`
 }

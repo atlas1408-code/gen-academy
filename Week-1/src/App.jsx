@@ -16,9 +16,9 @@ function App() {
         <div className="flex items-center gap-6">
           <h1
             className="text-lg font-bold tracking-tight"
-            style={{ color: 'var(--accent)' }}
+            style={{ color: 'var(--accent-yellow)' }}
           >
-            PokeArena Analytics
+            <span style={{ color: 'var(--accent)' }}>Poke</span>Arena Analytics
           </h1>
           <nav className="flex gap-2">
             <NavLink

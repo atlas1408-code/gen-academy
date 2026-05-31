@@ -108,17 +108,59 @@ export default function BattleSimulation({ pokemon1, pokemon2 }) {
 
       {battleState && (
         <>
-          <div className="flex gap-4">
-            <HealthBar
-              name={pokemon1.name}
-              current={currentHp1}
-              max={battleState.hp1Max}
-            />
-            <HealthBar
-              name={pokemon2.name}
-              current={currentHp2}
-              max={battleState.hp2Max}
-            />
+          {/* Battle stage: sprites with floating HP bars */}
+          <div
+            className="rounded-xl p-6"
+            style={{
+              backgroundColor: 'var(--bg-card)',
+              border: '1px var(--border-style) var(--border-color)',
+            }}
+          >
+            <div className="flex gap-6 items-end justify-center">
+              {/* Combatant 1 */}
+              <div className="flex-1 max-w-[200px]">
+                <HealthBar
+                  name={pokemon1.name}
+                  current={currentHp1}
+                  max={battleState.hp1Max}
+                />
+                <div className="battle-platform flex justify-center mt-3 pb-3">
+                  <img
+                    src={pokemon1.sprites?.other?.['official-artwork']?.front_default}
+                    alt={pokemon1.name}
+                    className="w-28 h-28 object-contain drop-shadow-lg"
+                  />
+                </div>
+              </div>
+
+              {/* VS divider */}
+              <div
+                className="text-2xl font-black pb-6"
+                style={{
+                  color: 'var(--accent-yellow)',
+                  fontFamily: 'var(--font-pixel)',
+                  fontSize: '0.8rem',
+                }}
+              >
+                VS
+              </div>
+
+              {/* Combatant 2 */}
+              <div className="flex-1 max-w-[200px]">
+                <HealthBar
+                  name={pokemon2.name}
+                  current={currentHp2}
+                  max={battleState.hp2Max}
+                />
+                <div className="battle-platform flex justify-center mt-3 pb-3">
+                  <img
+                    src={pokemon2.sprites?.other?.['official-artwork']?.front_default}
+                    alt={pokemon2.name}
+                    className="w-28 h-28 object-contain drop-shadow-lg"
+                  />
+                </div>
+              </div>
+            </div>
           </div>
 
           <CombatLog events={visibleEvents} />

@@ -46,8 +46,8 @@ export default function WinnerOverlay({ winner, analysis, onDismiss }) {
             className="relative rounded-2xl p-8 text-center max-w-md w-full"
             style={{
               backgroundColor: 'var(--bg-card)',
-              border: '2px solid var(--success)',
-              boxShadow: '0 0 60px rgba(34, 197, 94, 0.25), 0 0 120px rgba(34, 197, 94, 0.1)',
+              border: '2px solid var(--accent-yellow)',
+              boxShadow: '0 0 60px rgba(255, 203, 5, 0.2), 0 0 120px rgba(255, 203, 5, 0.08)',
             }}
             initial={{ opacity: 0, scale: 0.7, y: 30 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -69,7 +69,7 @@ export default function WinnerOverlay({ winner, analysis, onDismiss }) {
                 src={artwork}
                 alt={winner.name}
                 className="w-36 h-36 mx-auto mb-4 object-contain"
-                style={{ filter: 'drop-shadow(0 0 20px rgba(34, 197, 94, 0.3))' }}
+                style={{ filter: 'drop-shadow(0 0 20px rgba(255, 203, 5, 0.3))' }}
                 initial={{ y: 30, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ duration: 0.5, delay: 0.3 }}
@@ -78,7 +78,7 @@ export default function WinnerOverlay({ winner, analysis, onDismiss }) {
 
             <motion.h3
               className="text-3xl font-black uppercase mb-1 capitalize"
-              style={{ color: 'var(--success)' }}
+              style={{ color: 'var(--accent-yellow)', fontFamily: 'var(--font-pixel)', fontSize: '1rem', lineHeight: '1.8' }}
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ duration: 0.4, delay: 0.4 }}
@@ -88,7 +88,7 @@ export default function WinnerOverlay({ winner, analysis, onDismiss }) {
 
             <motion.div
               className="w-16 h-0.5 mx-auto mb-4"
-              style={{ backgroundColor: 'var(--success)' }}
+              style={{ backgroundColor: 'var(--accent-yellow)' }}
               initial={{ scaleX: 0 }}
               animate={{ scaleX: 1 }}
               transition={{ duration: 0.4, delay: 0.5 }}

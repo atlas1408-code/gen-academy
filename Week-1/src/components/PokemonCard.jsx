@@ -2,7 +2,7 @@ import { getTypeColor } from '../utils/typeColors'
 import { usePokemonSpecies, useAbilities } from '../hooks/usePokemon'
 import StatBarChart from './StatBarChart'
 
-export default function PokemonCard({ pokemon, compact = false }) {
+export default function PokemonCard({ pokemon, compact = false, showPlatform = false }) {
   if (!pokemon) return null
 
   const artwork = pokemon.sprites?.other?.['official-artwork']?.front_default
@@ -46,7 +46,7 @@ export default function PokemonCard({ pokemon, compact = false }) {
       }}
     >
       {artwork && (
-        <div className="flex justify-center mb-4">
+        <div className={`flex justify-center mb-4 ${showPlatform ? 'battle-platform pb-3' : ''}`}>
           <img
             src={artwork}
             alt={pokemon.name}

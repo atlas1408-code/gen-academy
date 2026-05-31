@@ -70,10 +70,10 @@ export default function RadarChart({ pokemon1, pokemon2 }) {
           display: false,
         },
         grid: {
-          color: 'rgba(45, 34, 85, 0.6)',
+          color: 'rgba(42, 58, 82, 0.6)',
         },
         angleLines: {
-          color: 'rgba(45, 34, 85, 0.6)',
+          color: 'rgba(42, 58, 82, 0.6)',
         },
         pointLabels: {
           color: '#94a3b8',

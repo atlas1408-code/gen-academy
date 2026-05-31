@@ -1,29 +1,32 @@
 @import "tailwindcss";
 
-/* ── Vibrant Theme (default) ── */
+/* ── Vibrant Theme (default) — Pokémon Classic ── */
 :root {
-  --bg-primary: #0f0a1e;
-  --bg-secondary: #150f2a;
-  --bg-card: #1a1235;
-  --bg-card-hover: #221a42;
-  --bg-input: #1e1640;
-  --border-color: #2d2255;
+  --bg-primary: #0f172a;
+  --bg-secondary: #121824;
+  --bg-card: #1a2332;
+  --bg-card-hover: #1e2b3d;
+  --bg-input: #162031;
+  --border-color: #2a3a52;
   --border-style: solid;
   --text-primary: #e2e8f0;
   --text-secondary: #94a3b8;
   --text-muted: #64748b;
-  --accent: #7c3aed;
-  --accent-hover: #6d28d9;
-  --accent-glow: rgba(124, 58, 237, 0.3);
+  --accent: #3b4cca;
+  --accent-hover: #2d3eb5;
+  --accent-glow: rgba(59, 76, 202, 0.35);
+  --accent-yellow: #ffcb05;
   --danger: #ef4444;
   --success: #22c55e;
   --warning: #eab308;
   --font-family: "Inter", system-ui, -apple-system, sans-serif;
+  --font-pixel: "Press Start 2P", monospace;
+  --font-retro: "VT323", monospace;
   --shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
   --radius: 0.75rem;
 }
 
-/* ── Wireframe Theme ── */
+/* ── Wireframe Theme — Blueprint Drafting ── */
 .wireframe {
   --bg-primary: #1a1a1a;
   --bg-secondary: #1e1e1e;
@@ -38,12 +41,21 @@
   --accent: #888888;
   --accent-hover: #777777;
   --accent-glow: transparent;
+  --accent-yellow: #aaaaaa;
   --danger: #999999;
   --success: #999999;
   --warning: #999999;
-  --font-family: "Courier New", monospace;
+  --font-family: "Fira Mono", "Courier New", monospace;
   --shadow: none;
   --radius: 0.25rem;
+}
+
+.wireframe body,
+.wireframe {
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-size: 24px 24px;
 }
 
 /* ── Base ── */
@@ -72,4 +84,47 @@ body {
 ::-webkit-scrollbar-thumb {
   background: var(--border-color);
   border-radius: 3px;
+}
+
+/* ── Dialog box for combat log ── */
+.dialog-box {
+  border: 3px double var(--border-color);
+  border-radius: 4px;
+  position: relative;
+}
+
+.dialog-box::after {
+  content: '▼';
+  position: absolute;
+  bottom: 6px;
+  right: 10px;
+  font-size: 10px;
+  color: var(--text-muted);
+  animation: blink-cursor 1s step-end infinite;
+}
+
+@keyframes blink-cursor {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+/* ── Battle platform ── */
+.battle-platform {
+  position: relative;
+}
+
+.battle-platform::after {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80%;
+  height: 16px;
+  background: radial-gradient(ellipse at center, rgba(59, 76, 202, 0.2) 0%, transparent 70%);
+  border-radius: 50%;
+}
+
+.wireframe .battle-platform::after {
+  background: radial-gradient(ellipse at center, rgba(136, 136, 136, 0.15) 0%, transparent 70%);
 }
