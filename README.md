@@ -1,69 +1,25 @@
 # Gen Academy
 
-This is a part of Gen Academy AI cohort May 2026.
+A collection of projects built during the Gen Academy AI cohort (May 2026) — a hands-on program exploring how AI can accelerate the way we design, build, and ship software.
 
-## Week 1: PokeArena Analytics
+Each week tackles a different domain and tech stack, pushing the boundaries of what's possible when you pair human creativity with AI-assisted development. The projects here are fully functional applications, not toy demos — built end-to-end with the help of AI tools.
 
-A React SPA that integrates real-time Pokémon data from the PokeAPI v2, provides matchup comparisons via stat radar charts, and runs a calculated turn-based battle simulation.
+## Projects
 
-### Features
+| Week | Project | What it covers |
+|------|---------|----------------|
+| 1 | [PokeArena Analytics](./Week-1) | React SPA, API integration, data visualization, game engine design, retro UI theming |
 
-- **Single Search** — Search any Pokémon by name, view official artwork, type badges, base stat bars, and a filterable moves grid
-- **Battle Arena** — Pick two Pokémon (via search, quick-pick pills, or random type-based draft), compare stats on an overlay radar chart, and run a full battle simulation
-- **Battle Simulation** — Turn-based engine with type effectiveness (dual-type stacking for 4x/0.25x), STAB, physical/special split, accuracy checks, and damage variance
-- **Animated Playback** — Health bars drain in real-time, combat log scrolls per turn, winner overlay with data-driven analytical insight
-- **Theme Toggle** — Switch between a premium dark-mode "Vibrant" theme and a monochrome "Blueprint" wireframe mode
+## What this repo is for
 
-### Tech Stack
+- A living portfolio of AI-assisted builds, from concept to deployed app
+- A reference for anyone curious about pairing AI tools with real engineering workflows
+- Inspiration for builders who want to see how far you can push a week-long sprint with AI in the loop
 
-- React 19 + Vite 6
-- Tailwind CSS v4
-- TanStack Query (react-query) — aggressive caching for PokeAPI
-- Chart.js + react-chartjs-2 — radar chart
-- Framer Motion — stat bar and health bar animations
-- Docker (multi-stage: node build + nginx serve)
+## How each project is structured
 
-### Quick Start
+Every week lives in its own directory with a standalone README, setup instructions, and everything needed to run it locally or in Docker. Jump into any week's folder to get started.
 
-#### Local Development
+## About the cohort
 
-```bash
-cd Week-1
-cp .env.sample .env
-npm install
-npm run dev
-```
-
-App runs at `http://localhost:5173`.
-
-#### Docker
-
-Requires Docker Desktop — install it from [docker.com/products/docker-desktop](https://www.docker.com/products/docker-desktop/) (available for Mac, Windows, and Linux). Once installed, make sure Docker Desktop is running, then:
-
-```bash
-cd Week-1
-cp .env.sample .env
-docker compose up --build
-```
-
-App runs at `http://localhost:3000`.
-
-### Environment Variables
-
-| Variable | Description | Default |
-|---|---|---|
-| `VITE_POKEAPI_BASE_URL` | PokeAPI v2 base URL | `https://pokeapi.co/api/v2` |
-
-### Architecture
-
-```
-Week-1/src/
-  api/pokeapi.js          — PokeAPI fetch functions
-  hooks/usePokemon.js     — React Query hooks
-  utils/typeEffectiveness.js — Type chart builder + multiplier calc
-  utils/typeColors.js     — Type → color mapping
-  engine/battleEngine.js  — Pure-function battle simulator
-  pages/Explorer.jsx      — Single Search view
-  pages/BattleArena.jsx   — Battle Arena view
-  components/             — Reusable UI components
-```
+Gen Academy is a project-based AI cohort where participants ship a new project each week, using AI as a core part of the development process. The focus is on learning by building — not theory, not slides, just real apps that solve real (or fun) problems.
