@@ -1,0 +1,21 @@
+# Secrets
+.env
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Node / frontend
+node_modules/
+frontend/dist/
+
+# Manifests / local state
+backend/manifest.json
+
+# One-off acceptance/smoke scripts (kept local, not committed)
+backend/phase0_smoke.py
+
+# OS
+.DS_Store
