@@ -4,7 +4,10 @@ llama-index-embeddings-nebius>=0.3.0
 llama-index-llms-nebius>=0.1.0
 llama-index-vector-stores-pinecone>=0.4.0
 pinecone>=5.0.0
+pinecone-text>=0.9.0          # BM25 sparse encoder for hybrid retrieval
 python-dotenv>=1.0.0
+PyYAML>=6.0                   # eval question set
+tiktoken>=0.7.0              # chunk token sizing
 
 # ── Phase 3: API + SSE ──
 fastapi>=0.115.0

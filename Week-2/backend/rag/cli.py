@@ -46,6 +46,26 @@ def _cmd_ask(args) -> int:
     return 0
 
 
+def _cmd_clean_report(args) -> int:
+    from .cleaning import glossary_hits, oov_scan
+    from .loader import parse_segments
+    s = load_settings()
+    target = Path(args.path) if args.path else (s.transcripts_dir / "week1-session1.txt")
+    raw = "\n".join(seg.text for seg in parse_segments(target))
+    print(f"=== {target.name} ===")
+    print("\n-- glossary fixes that would apply --")
+    hits = glossary_hits(raw)
+    if hits:
+        for term, n in sorted(hits.items(), key=lambda x: -x[1]):
+            print(f"  {n:4d}  {term!r} → canonical")
+    else:
+        print("  (none)")
+    print("\n-- OOV candidates (frequent non-dictionary tokens) --")
+    for tok, n in oov_scan(raw):
+        print(f"  {n:4d}  {tok}")
+    return 0
+
+
 def _cmd_manifest(_args) -> int:
     if _MANIFEST.exists():
         print(_MANIFEST.read_text())
@@ -66,6 +86,10 @@ def main(argv=None) -> int:
     pa = sub.add_parser("ask", help="ask a question")
     pa.add_argument("question")
     pa.set_defaults(func=_cmd_ask)
+
+    pc = sub.add_parser("clean-report", help="show glossary fixes + OOV candidates for a file")
+    pc.add_argument("path", nargs="?", default=None)
+    pc.set_defaults(func=_cmd_clean_report)
 
     pm = sub.add_parser("manifest", help="show ingested-doc registry")
     pm.set_defaults(func=_cmd_manifest)

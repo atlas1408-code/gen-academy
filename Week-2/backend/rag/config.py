@@ -57,6 +57,7 @@ class Settings:
     top_k: int
     rerank_top_n: int
     similarity_cutoff: float
+    hybrid_alpha: float
 
 
 def load_settings() -> Settings:
@@ -70,12 +71,13 @@ def load_settings() -> Settings:
         pinecone_cloud=_get("PINECONE_CLOUD", "aws"),
         pinecone_region=_get("PINECONE_REGION", "us-east-1"),
         embed_dim=int(_get("EMBED_DIM", "4096")),
-        pinecone_metric=_get("PINECONE_METRIC", "cosine"),
+        pinecone_metric=_get("PINECONE_METRIC", "dotproduct"),
         transcripts_dir=ROOT / _get("TRANSCRIPTS_DIR", "Input-Data/Transcripts"),
         slides_dir=ROOT / _get("SLIDES_DIR", "Input-Data/Slides"),
         chunk_size=int(_get("CHUNK_SIZE", "512")),
         chunk_overlap=int(_get("CHUNK_OVERLAP", "80")),
         top_k=int(_get("TOP_K", "8")),
         rerank_top_n=int(_get("RERANK_TOP_N", "4")),
-        similarity_cutoff=float(_get("SIMILARITY_CUTOFF", "0.30")),
+        similarity_cutoff=float(_get("SIMILARITY_CUTOFF", "0.40")),
+        hybrid_alpha=float(_get("HYBRID_ALPHA", "0.7")),
     )

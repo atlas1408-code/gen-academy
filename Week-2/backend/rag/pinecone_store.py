@@ -6,12 +6,19 @@ match the embedding model or upserts fail (§8.1).
 """
 from __future__ import annotations
 
+import math
 import time
 from functools import lru_cache
 
 from pinecone import Pinecone, ServerlessSpec
 
 from .config import load_settings
+
+
+def l2_normalize(vec: list[float]) -> list[float]:
+    """Unit-normalize so dotproduct == cosine on this index."""
+    n = math.sqrt(sum(x * x for x in vec))
+    return [x / n for x in vec] if n else vec
 
 
 @lru_cache(maxsize=1)
@@ -35,6 +42,19 @@ def ensure_index():
         while not pc.describe_index(s.pinecone_index).status["ready"]:
             time.sleep(1)
     return pc.Index(s.pinecone_index)
+
+
+def recreate_index():
+    """Delete the index if it exists, then create it fresh with the configured
+    metric. Needed for the cosine→dotproduct switch when enabling hybrid (§10).
+    """
+    s = load_settings()
+    pc = get_client()
+    if s.pinecone_index in {ix["name"] for ix in pc.list_indexes()}:
+        pc.delete_index(s.pinecone_index)
+        while s.pinecone_index in {ix["name"] for ix in pc.list_indexes()}:
+            time.sleep(1)
+    return ensure_index()
 
 
 def get_vector_store():

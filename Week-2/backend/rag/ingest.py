@@ -21,10 +21,13 @@ from pathlib import Path
 
 import tiktoken
 
+from .cleaning import clean_text, glossary_hits
 from .config import ROOT, load_settings
+from .events import Clock, event
 from .loader import lecture_id_for, parse_segments, title_for, Segment
 from .nebius import get_embed_model
-from .pinecone_store import ensure_index
+from .pinecone_store import ensure_index, l2_normalize
+from .sparse import encode_doc, fit_bm25
 
 _ENC = tiktoken.get_encoding("cl100k_base")
 _MANIFEST = ROOT / "backend" / "manifest.json"
@@ -102,33 +105,69 @@ def _chunk_id(lecture_id: str, content_type: str, chunk_index: int) -> str:
     return hashlib.sha1(f"{lecture_id}:{content_type}:{chunk_index}".encode()).hexdigest()
 
 
-def ingest_file(path: str | Path, *, force: bool = False) -> dict:
-    """Ingest one transcript file. Returns a summary dict."""
+def ingest_file_stream(path: str | Path, *, force: bool = False, bm25=None):
+    """Ingest one transcript file, yielding a StepEvent per stage (§7.2).
+
+    The terminal event is stage="done" whose data is the summary dict (or a
+    skip notice). bm25: pre-fitted encoder (ingest_dir fits corpus-wide); when
+    None it is fit on this file's chunks.
+    """
+    clock = Clock()
     s = load_settings()
     path = Path(path)
     fhash = _file_hash(path)
     manifest = _load_manifest()
 
+    yield event("load", "start", f"Loading {path.name}…", clock,
+                doc=path.name, file_size_kb=round(path.stat().st_size / 1024, 1))
+
     if not force and manifest.get(path.name, {}).get("hash") == fhash:
-        return {"file": path.name, "skipped": True, "reason": "unchanged (manifest hit)",
-                "chunk_count": manifest[path.name].get("chunk_count", 0)}
+        summary = {"file": path.name, "skipped": True, "reason": "unchanged (manifest hit)",
+                   "chunk_count": manifest[path.name].get("chunk_count", 0)}
+        yield event("done", "complete", f"{path.name} unchanged — skipped (idempotent)",
+                    clock, **summary)
+        return
 
     lecture_id = lecture_id_for(path)
     title = title_for(path)
     segments = parse_segments(path)
+    yield event("load", "complete", f"Parsed {len(segments)} timestamped segments",
+                clock, doc=path.name, segment_count=len(segments))
+
+    # Cleaning: normalize ASR-mangled jargon before chunking (§8.3).
+    raw_join = " ".join(seg.text for seg in segments)
+    fixes = sum(glossary_hits(raw_join).values())
+    segments = [Segment(speaker=seg.speaker, text=clean_text(seg.text),
+                        timestamp=seg.timestamp) for seg in segments]
+    yield event("clean", "complete", f"Applied glossary ({fixes} jargon fixes)",
+                clock, glossary_fixes=fixes)
+
     chunks = chunk_segments(segments, s.chunk_size, s.chunk_overlap)
-
-    # Embed all chunk texts via Nebius (batched by the embedding client).
-    embed = get_embed_model()
     texts = [c["text"] for c in chunks]
-    vectors = embed.get_text_embedding_batch(texts, show_progress=False)
+    yield event("chunk", "complete",
+                f"Chunked into {len(chunks)} chunks (~{s.chunk_size} tok, {s.chunk_overlap} overlap)",
+                clock, chunk_count=len(chunks), sample_chunk=texts[0][:240] if texts else "")
 
-    # Build Pinecone records with full §7.1 metadata + deterministic IDs.
+    # Dense embeddings via Nebius (batched), L2-normalized for the dotproduct index.
+    yield event("embed", "start", f"Embedding {len(texts)} chunks via Nebius "
+                f"({s.nebius_embed_model})…", clock, chunk_count=len(texts))
+    embed = get_embed_model()
+    vectors = [l2_normalize(v) for v in embed.get_text_embedding_batch(texts, show_progress=False)]
+    preview = [round(x, 4) for x in vectors[0][:8]] if vectors else []
+    yield event("embed", "complete", f"Embedded {len(vectors)} chunks ({s.embed_dim}-dim)",
+                clock, embedding_dim=s.embed_dim, embedding_preview=preview)
+
+    # Sparse BM25 vectors for hybrid retrieval (§8.3).
+    if bm25 is None:
+        bm25 = fit_bm25(texts)
+    sparse_vecs = [encode_doc(bm25, t) for t in texts]
+
     records = []
-    for c, vec in zip(chunks, vectors):
+    for c, vec, sv in zip(chunks, vectors, sparse_vecs):
         records.append({
             "id": _chunk_id(lecture_id, "transcript", c["chunk_index"]),
             "values": vec,
+            "sparse_values": sv,
             "metadata": {
                 "text": c["text"],
                 "source": path.name,
@@ -142,9 +181,13 @@ def ingest_file(path: str | Path, *, force: bool = False) -> dict:
             },
         })
 
+    yield event("upsert", "start", f"Upserting {len(records)} vectors to Pinecone…",
+                clock, vector_count=len(records))
     index = ensure_index()
     for i in range(0, len(records), 100):  # Pinecone upsert batch cap
         index.upsert(vectors=records[i:i + 100], namespace=_NAMESPACE)
+    yield event("upsert", "complete", f"Upserted {len(records)} vectors (dense + sparse)",
+                clock, vector_count=len(records))
 
     manifest[path.name] = {
         "hash": fhash,
@@ -154,20 +197,55 @@ def ingest_file(path: str | Path, *, force: bool = False) -> dict:
     }
     _save_manifest(manifest)
 
-    return {
-        "file": path.name,
-        "skipped": False,
-        "lecture_id": lecture_id,
-        "segment_count": len(segments),
-        "chunk_count": len(chunks),
-        "embedding_dim": len(vectors[0]) if vectors else 0,
-        "sample_chunk": chunks[0]["text"][:240] if chunks else "",
-    }
+    yield event("done", "complete", f"Ingested {path.name}", clock,
+                file=path.name, skipped=False, lecture_id=lecture_id,
+                segment_count=len(segments), chunk_count=len(chunks),
+                embedding_dim=s.embed_dim,
+                sample_chunk=chunks[0]["text"][:240] if chunks else "")
+
+
+def ingest_file(path: str | Path, *, force: bool = False, bm25=None) -> dict:
+    """Non-streaming wrapper for the CLI: drains the stream, returns the summary."""
+    summary: dict = {}
+    for ev in ingest_file_stream(path, force=force, bm25=bm25):
+        if ev.stage == "done":
+            summary = ev.data
+    return summary
+
+
+def _fit_corpus_bm25(files: list[Path]):
+    """Fit BM25 once over all files' chunks (consistent IDF for hybrid)."""
+    s = load_settings()
+    all_texts: list[str] = []
+    for fp in files:
+        segs = [Segment(speaker=seg.speaker, text=clean_text(seg.text), timestamp=seg.timestamp)
+                for seg in parse_segments(fp)]
+        all_texts += [c["text"] for c in chunk_segments(segs, s.chunk_size, s.chunk_overlap)]
+    return fit_bm25(all_texts)
+
+
+def _corpus_files(dir_path: str | Path) -> list[Path]:
+    dir_path = Path(dir_path)
+    return sorted(dir_path.glob("*.txt")) + sorted(dir_path.glob("*.vtt"))
 
 
 def ingest_dir(dir_path: str | Path, *, force: bool = False) -> list[dict]:
-    dir_path = Path(dir_path)
-    results = []
-    for fp in sorted(dir_path.glob("*.txt")) + sorted(dir_path.glob("*.vtt")):
-        results.append(ingest_file(fp, force=force))
-    return results
+    """Ingest every transcript in a dir. BM25 is fit ONCE over the whole corpus
+    so IDF statistics are consistent across files (hybrid correctness)."""
+    files = _corpus_files(dir_path)
+    if not files:
+        return []
+    bm25 = _fit_corpus_bm25(files)
+    return [ingest_file(fp, force=force, bm25=bm25) for fp in files]
+
+
+def ingest_corpus_stream(dir_path: str | Path, *, force: bool = False):
+    """Streaming ingest of a whole dir, yielding StepEvents (§7.2). Fits BM25
+    corpus-wide first, then streams each file."""
+    files = _corpus_files(dir_path)
+    if not files:
+        yield event("error", "error", f"No transcripts found in {dir_path}", Clock())
+        return
+    bm25 = _fit_corpus_bm25(files)
+    for fp in files:
+        yield from ingest_file_stream(fp, force=force, bm25=bm25)

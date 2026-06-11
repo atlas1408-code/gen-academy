@@ -1,0 +1,82 @@
+# Eval question set for week1-session1 (PLAN.md §10, §11).
+#
+# ground_truth: timestamps (HH:MM:SS) that fall inside the chunk(s) which
+# actually answer the question. A retrieval "hit" = a returned chunk whose
+# [timestamp_start, timestamp_end] window contains at least one of these.
+# Unanswerable questions have answerable: false and no ground_truth — success
+# is a refusal.
+
+- id: q01
+  category: single_chunk
+  question: "What is a context window in an LLM?"
+  answerable: true
+  ground_truth: ["00:52:52", "00:53:02", "00:53:22", "01:12:07"]
+
+- id: q02
+  category: single_chunk
+  question: "What is temperature and what does changing it do?"
+  answerable: true
+  ground_truth: ["01:02:51", "01:02:59", "01:03:50"]
+
+- id: q03
+  category: single_chunk
+  question: "What is fine-tuning and when would you use it?"
+  answerable: true
+  ground_truth: ["00:58:54", "00:59:34", "00:59:54"]
+
+- id: q04
+  category: single_chunk
+  question: "What is hallucination in large language models?"
+  answerable: true
+  ground_truth: ["00:54:52", "00:55:13", "00:55:28"]
+
+- id: q05
+  category: single_chunk
+  question: "What context window sizes did Llama 4 Scout and Maverick have?"
+  answerable: true
+  ground_truth: ["01:13:24", "01:13:34", "01:13:46"]
+
+- id: q06
+  category: multi_topic
+  question: "What are the layers of the AI agent tech stack?"
+  answerable: true
+  ground_truth: ["00:31:37", "00:33:43", "00:34:16", "00:34:22"]
+
+- id: q07
+  category: multi_topic
+  question: "What are the parts of a prompt, including the system prompt?"
+  answerable: true
+  ground_truth: ["00:58:10", "01:33:09", "01:33:27", "01:34:07", "01:34:30"]
+
+- id: q08
+  category: multi_topic
+  question: "What prompting techniques were discussed?"
+  answerable: true
+  ground_truth: ["01:36:54", "01:37:19", "01:37:40"]
+
+- id: q09
+  category: ambiguous
+  question: "How long is the course and where can I get help?"
+  answerable: true
+  ground_truth: ["00:01:05", "00:01:26", "00:20:11", "02:43:58"]
+
+- id: q10
+  category: ambiguous
+  question: "What is the transformer architecture?"
+  answerable: true
+  ground_truth: ["00:43:38", "00:43:58", "01:07:42", "01:08:02"]
+
+- id: q11
+  category: unanswerable
+  question: "What is the best recipe for authentic Neapolitan pizza dough?"
+  answerable: false
+
+- id: q12
+  category: unanswerable
+  question: "What were Tesla's quarterly revenue figures for 2024?"
+  answerable: false
+
+- id: q13
+  category: unanswerable
+  question: "How do I configure a Kubernetes ingress controller with TLS?"
+  answerable: false

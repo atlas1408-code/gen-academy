@@ -19,3 +19,6 @@ backend/phase0_smoke.py
 
 # OS
 .DS_Store
+
+# Fitted BM25 params (rebuilt on ingest)
+backend/bm25_params.json
