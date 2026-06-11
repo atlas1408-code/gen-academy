@@ -1,0 +1,258 @@
+<h2 class="sr-only">Lodestar liquid-glass prototype, contrast-corrected: a readable Ingest/Query toggle, glass input, and consistent typography, with animated ingestion and query flows gated by themed async loaders.</h2>
+
+<style>
+@keyframes lg-rot{to{transform:rotate(360deg)}}
+@keyframes lg-slide{0%{transform:translateX(-130%)}100%{transform:translateX(360%)}}
+@keyframes lg-up{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes lg-tw{0%,100%{opacity:.2}50%{opacity:.7}}
+.lg-fw{background:var(--color-background-secondary);border-radius:var(--border-radius-lg);padding:10px}
+#win{position:relative;overflow:hidden;border-radius:18px;background:linear-gradient(158deg,#eef4ff 0%,#dcebfc 55%,#d3e3fb 100%);border:1px solid rgba(255,255,255,.6);font-family:var(--font-sans)}
+.lg-blob{position:absolute;border-radius:50%;filter:blur(42px);opacity:.7;pointer-events:none}
+.lg-glass{background:rgba(255,255,255,.5);-webkit-backdrop-filter:blur(16px) saturate(1.5);backdrop-filter:blur(16px) saturate(1.5);border:1px solid rgba(255,255,255,.7);box-shadow:0 8px 26px rgba(70,110,190,.16),inset 0 1px 0 rgba(255,255,255,.8)}
+.lg-top{position:relative;display:flex;align-items:center;gap:10px;padding:13px 16px;z-index:3}
+#win .lg-seg{display:inline-flex;background:rgba(255,255,255,.55)!important;border:1px solid rgba(255,255,255,.85);border-radius:12px;padding:3px;margin-left:auto;box-shadow:0 2px 8px rgba(70,110,190,.12)}
+#win .lg-seg button{border:none!important;background:transparent!important;color:#43567f!important;-webkit-text-fill-color:#43567f!important;font-size:12.5px;font-weight:500;padding:7px 18px;border-radius:9px;cursor:pointer;transition:.2s;font-family:var(--font-sans)}
+#win .lg-seg button.on{background:#2f6bff!important;color:#fff!important;-webkit-text-fill-color:#fff!important;box-shadow:0 3px 10px rgba(47,107,255,.4)}
+.lg-body{position:relative;z-index:2;padding:2px 16px 16px}
+.lg-steps{display:flex;gap:8px;margin:0 0 12px;flex-wrap:wrap}
+#win .lg-pill{display:flex;align-items:center;gap:6px;font-size:11px;color:#73850a6;color:#6f80a4!important;background:rgba(255,255,255,.4);border:1px solid rgba(255,255,255,.6);border-radius:10px;padding:5px 11px;transition:.25s}
+#win .lg-pill.on{color:#1b2a4a!important;background:rgba(255,255,255,.85)}
+#win .lg-pill.done{color:#0f8268!important;background:rgba(255,255,255,.7)}
+.lg-sp{display:inline-flex;width:13px;height:13px;align-items:center;justify-content:center}
+.lg-spin{width:12px;height:12px;border-radius:50%;border:2px solid rgba(47,107,255,.22);border-top-color:#2f6bff;animation:lg-rot .7s linear infinite}
+.lg-stage{position:relative;border-radius:15px;min-height:150px}
+.lg-loader{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);display:none;align-items:center;gap:9px;border-radius:12px;padding:8px 14px;z-index:7;min-width:236px}
+.lg-loader .cap{font-size:11.5px;color:#26365a}
+.lg-shim{height:4px;border-radius:2px;background:rgba(47,107,255,.16);overflow:hidden;position:relative;margin-top:5px}
+.lg-shim::after{content:"";position:absolute;inset:0;width:38%;background:#2f6bff;border-radius:2px;opacity:.55;animation:lg-slide 1.1s ease-in-out infinite}
+#win input.lg-input{flex:1;background:rgba(255,255,255,.65)!important;color:#1b2a4a!important;-webkit-text-fill-color:#1b2a4a!important;border:1px solid rgba(255,255,255,.9)!important;border-radius:11px;height:40px;padding:0 14px;font-size:13.5px;outline:none;font-family:var(--font-sans);box-shadow:inset 0 1px 2px rgba(70,110,190,.08)}
+#win input.lg-input::placeholder{color:#8295b8!important;-webkit-text-fill-color:#8295b8!important}
+#win .lg-btn{background:#2f6bff!important;color:#fff!important;-webkit-text-fill-color:#fff!important;border:none!important;border-radius:11px;height:40px;padding:0 20px;font-size:13.5px;font-weight:500;cursor:pointer;box-shadow:0 5px 15px rgba(47,107,255,.32);font-family:var(--font-sans)}
+#win .lg-btn:disabled{opacity:.45;cursor:default}
+#win .lg-ghost{background:rgba(255,255,255,.62)!important;color:#3a4d72!important;-webkit-text-fill-color:#3a4d72!important;border:1px solid rgba(255,255,255,.85)!important;border-radius:11px;height:40px;padding:0 16px;font-size:13px;cursor:pointer;font-family:var(--font-sans)}
+#win .lg-chip{font-size:11.5px;padding:6px 12px;border-radius:999px;background:rgba(255,255,255,.6)!important;border:1px solid rgba(255,255,255,.8)!important;color:#3a4d72!important;-webkit-text-fill-color:#3a4d72!important;cursor:pointer;transition:.2s;font-family:var(--font-sans)}
+#win .lg-chip:hover{background:rgba(255,255,255,.92)!important}
+.lg-tip{position:absolute;width:222px;border-radius:14px;padding:12px 13px;pointer-events:none;opacity:0;transform:translate(-50%,-118%);transition:opacity .16s;z-index:9}
+.lg-tip .t{font-size:11.5px;line-height:1.55;color:#28385c}
+.lg-tip .t b{color:#2f6bff;font-weight:500}
+.lg-bar{height:5px;border-radius:3px;background:rgba(47,107,255,.16);margin-top:10px;overflow:hidden}
+.lg-bar i{display:block;height:100%;background:#2f6bff;border-radius:3px;width:0;transition:width .4s}
+.lg-rel{display:flex;justify-content:space-between;font-size:10.5px;color:#6076a0;margin-top:5px}
+.lg-cite{margin-top:8px;display:inline-flex;align-items:center;gap:5px;font-size:11px;background:rgba(47,107,255,.13);color:#2456c8;border-radius:8px;padding:4px 10px}
+.lg-tile{font-size:10px;color:#2456c8;background:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.85);border-radius:8px;padding:6px 4px;text-align:center;transition:transform .5s ease,opacity .5s ease,background .4s,color .4s}
+.lg-card{border-radius:13px;padding:13px 15px}
+.hide{display:none}
+</style>
+
+<div class="lg-fw"><div id="win">
+  <div class="lg-blob" style="width:200px;height:200px;background:#bcd7ff;top:-50px;left:-40px"></div>
+  <div class="lg-blob" style="width:220px;height:220px;background:#cdbcff;bottom:-70px;right:-30px"></div>
+  <div class="lg-blob" style="width:170px;height:170px;background:#b9eefc;top:30px;right:120px;opacity:.55"></div>
+
+  <div class="lg-top">
+    <span style="font-family:var(--font-serif);font-size:21px;color:#16223f">Lodestar</span>
+    <span class="lg-seg" id="seg">
+      <button data-tab="ingest">Ingest</button>
+      <button data-tab="query" class="on">Query</button>
+    </span>
+  </div>
+
+  <div class="lg-body">
+    <section id="panel-query">
+      <div class="lg-steps">
+        <span class="lg-pill" id="q-embed"><span class="lg-sp"></span>embed</span>
+        <span class="lg-pill" id="q-search"><span class="lg-sp"></span>search</span>
+        <span class="lg-pill" id="q-rerank"><span class="lg-sp"></span>rerank</span>
+        <span class="lg-pill" id="q-answer"><span class="lg-sp"></span>answer</span>
+      </div>
+      <div class="lg-stage" id="q-stage">
+        <svg id="sky" viewBox="0 0 600 270" width="100%" style="display:block">
+          <g id="dots" fill="#9fb6e0"></g>
+          <g id="clusters" font-family="sans-serif" fill="#7e93bd" font-size="11">
+            <text x="94" y="36">chunking</text><text x="452" y="40">embeddings</text>
+            <text x="80" y="246">retrieval</text><text x="498" y="138">evaluation</text>
+          </g>
+          <g id="links" stroke="#2f6bff" stroke-width="1.2" stroke-linecap="round"></g>
+          <g id="orbs"></g>
+          <g id="particles" fill="#2f6bff"></g>
+          <g id="pulse" fill="#1e4fd0"></g>
+          <text id="qtext" x="300" y="238" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#33476e" opacity="0"></text>
+          <text id="vec" x="300" y="166" text-anchor="middle" font-family="monospace" font-size="11" fill="#2456c8" opacity="0"></text>
+          <g id="qstar"></g>
+        </svg>
+        <div class="lg-loader lg-glass" id="q-loader"><span class="lg-spin"></span><div style="flex:1"><div class="cap" id="q-cap">embedding…</div><div class="lg-shim"></div></div></div>
+        <div class="lg-tip lg-glass" id="tip">
+          <div class="t" id="tip-t"></div>
+          <div class="lg-bar" id="tip-bar"><i></i></div>
+          <div class="lg-rel" id="tip-rel"><span>relevance</span><span id="tip-s"></span></div>
+          <div class="lg-cite"><i class="ti ti-external-link" aria-hidden="true"></i><span id="tip-c"></span></div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;margin-top:6px">
+        <input id="q-input" class="lg-input" type="text" value="what is chunking?">
+        <button id="q-go" class="lg-btn">find</button>
+        <button id="q-replay" class="lg-ghost hide">replay</button>
+      </div>
+      <div style="display:flex;gap:7px;margin-top:10px;flex-wrap:wrap">
+        <span class="lg-chip" data-q="what is chunking?">what is chunking?</span>
+        <span class="lg-chip" data-q="how does hybrid retrieval work?">how does hybrid retrieval work?</span>
+        <span class="lg-chip" data-q="what is faithfulness?">what is faithfulness?</span>
+      </div>
+      <div id="q-ans" class="lg-card lg-glass hide" style="margin-top:12px">
+        <div id="q-ans-t" style="font-size:12.5px;color:#26365a;line-height:1.6"></div>
+        <div id="q-ans-c" style="margin-top:9px;display:flex;gap:6px;flex-wrap:wrap"></div>
+      </div>
+    </section>
+
+    <section id="panel-ingest" class="hide">
+      <div class="lg-steps">
+        <span class="lg-pill" id="i-read"><span class="lg-sp"></span>read</span>
+        <span class="lg-pill" id="i-chunk"><span class="lg-sp"></span>chunk</span>
+        <span class="lg-pill" id="i-embed"><span class="lg-sp"></span>embed</span>
+        <span class="lg-pill" id="i-store"><span class="lg-sp"></span>store</span>
+      </div>
+      <div class="lg-stage" id="i-stage">
+        <div style="display:grid;grid-template-columns:122px 1fr 98px;gap:10px;align-items:center;min-height:138px">
+          <div id="i-doc" class="lg-card lg-glass" style="text-align:center;opacity:.5">
+            <i class="ti ti-file-text" style="font-size:26px;color:#2f6bff" aria-hidden="true"></i>
+            <div id="i-doc-n" style="font-size:11px;color:#26365a;margin-top:5px">no file yet</div>
+            <div id="i-doc-s" style="font-size:10px;color:#6076a0"></div>
+          </div>
+          <div id="i-chunks" style="display:grid;grid-template-columns:repeat(6,1fr);gap:5px;align-content:center"></div>
+          <div id="i-vault" class="lg-card lg-glass" style="text-align:center">
+            <i class="ti ti-database" style="font-size:24px;color:#2f6bff" aria-hidden="true"></i>
+            <div style="font-size:10.5px;color:#26365a;margin-top:4px">Pinecone</div>
+            <div id="i-vault-c" style="font-size:15px;color:#16223f;font-weight:500">0</div>
+          </div>
+        </div>
+        <div class="lg-loader lg-glass" id="i-loader"><span class="lg-spin"></span><div style="flex:1"><div class="cap" id="i-cap">reading…</div><div class="lg-shim"></div></div></div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;margin-top:8px">
+        <label class="lg-ghost" style="display:inline-flex;align-items:center;gap:6px"><i class="ti ti-upload" aria-hidden="true"></i>choose file<input id="i-file" type="file" style="display:none"></label>
+        <button id="i-sample" class="lg-ghost">use sample</button>
+        <button id="i-go" class="lg-btn" style="margin-left:auto" disabled>ingest</button>
+      </div>
+      <div id="i-summary" class="lg-card lg-glass hide" style="margin-top:12px;display:flex;align-items:center;gap:10px">
+        <i class="ti ti-circle-check" style="font-size:20px;color:#0f8268" aria-hidden="true"></i>
+        <div id="i-sum-t" style="font-size:12.5px;color:#26365a"></div>
+      </div>
+    </section>
+  </div>
+</div></div>
+
+<script>
+(function(){
+var NS="http://www.w3.org/2000/svg",C={x:300,y:135},lastToks=[];
+function rnd(a,b){return a+Math.random()*(b-a);}
+function wait(ms){return new Promise(function(r){setTimeout(r,ms);});}
+function anim(dur,on){return new Promise(function(res){var s=null;function f(t){if(!s)s=t;var p=Math.min(1,(t-s)/dur);on(p);if(p<1)requestAnimationFrame(f);else res();}requestAnimationFrame(f);});}
+function ease(p){return 1-Math.pow(1-p,3);}
+function back(p){var c1=1.9,c3=c1+1;return 1+c3*Math.pow(p-1,3)+c1*Math.pow(p-1,2);}
+function pill(id,st){var el=document.getElementById(id),sp=el.querySelector(".lg-sp");el.classList.remove("on","done");if(st==="active"){el.classList.add("on");sp.innerHTML='<span class="lg-spin"></span>';}else if(st==="done"){el.classList.add("done");sp.innerHTML='<i class="ti ti-check" aria-hidden="true"></i>';}else sp.innerHTML="";}
+function loader(prefix,text){var l=document.getElementById(prefix+"-loader");if(text===false){l.style.display="none";return;}document.getElementById(prefix+"-cap").textContent=text;l.style.display="flex";}
+
+var dotsG=document.getElementById("dots");
+for(var i=0;i<26;i++){var c=document.createElementNS(NS,"circle");var x=rnd(0,600),y=rnd(0,270);c.setAttribute("cx",x.toFixed(0));c.setAttribute("cy",y.toFixed(0));c.setAttribute("r",rnd(0.5,1.4).toFixed(1));c.style.animation="lg-tw "+rnd(2.5,5).toFixed(2)+"s ease-in-out "+rnd(0,3).toFixed(2)+"s infinite";dotsG.appendChild(c);}
+var win=document.getElementById("win"),blobs=win.querySelectorAll(".lg-blob"),gx=0,gy=0,bx=0,by=0,qGlow=null;
+win.addEventListener("pointermove",function(e){var r=win.getBoundingClientRect();gx=(e.clientX-r.left)/r.width-0.5;gy=(e.clientY-r.top)/r.height-0.5;});
+win.addEventListener("pointerleave",function(){gx=0;gy=0;});
+function amb(now){var k=now/1000;bx+=(gx-bx)*0.05;by+=(gy-by)*0.05;blobs.forEach(function(b,i){var f=(i+1)*10;b.style.transform="translate("+(bx*f+Math.sin(k*0.3+i)*6).toFixed(1)+"px,"+(by*f+Math.cos(k*0.27+i)*6).toFixed(1)+"px)";});dotsG.setAttribute("transform","translate("+(bx*6).toFixed(1)+","+(by*6).toFixed(1)+")");if(qGlow){qGlow.setAttribute("r",(9+1.8*Math.sin(k*2)).toFixed(2));qGlow.setAttribute("opacity",(0.16+0.06*Math.sin(k*2)).toFixed(3));}requestAnimationFrame(amb);}
+requestAnimationFrame(amb);
+
+var chunks=[
+ {x:150,y:70,t:"Chunking splits a document into smaller passages. It only divides the text, it does not transform it.",src:"lecture 3 · 12:30",kw:["chunk","chunking","split","passage","size"]},
+ {x:198,y:52,t:"A 15 percent overlap between chunks keeps a thought from being cut at a boundary.",src:"lecture 3 · 14:05",kw:["chunk","overlap","boundary","split"]},
+ {x:452,y:74,t:"Embeddings turn text into a 1024 dimensional vector where similar meanings sit close together.",src:"lecture 4 · 03:10",kw:["embedding","embeddings","vector","dimension","meaning"]},
+ {x:500,y:96,t:"The same model embeds your question and the documents, so they share one vector space.",src:"deck 4 · slide 7",kw:["embedding","query","model","space","question"]},
+ {x:118,y:178,t:"Hybrid retrieval combines dense semantic search with sparse keyword search, then blends the scores.",src:"lecture 5 · 21:40",kw:["hybrid","retrieval","dense","sparse","keyword","work"]},
+ {x:164,y:206,t:"Top k returns the most similar chunks from Pinecone by vector distance.",src:"lecture 5 · 24:02",kw:["retrieval","topk","similar","pinecone","search","top"]},
+ {x:90,y:134,t:"A reranker re-scores the retrieved chunks with a cross encoder and drops weak ones.",src:"lecture 6 · 09:15",kw:["rerank","reranker","cross","score"]},
+ {x:524,y:158,t:"Faithfulness measures whether the answer is grounded in the retrieved chunks, not just plausible.",src:"lecture 7 · 02:50",kw:["faithfulness","grounded","evaluation","faithful"]},
+ {x:548,y:188,t:"The refusal path returns I do not know when nothing clears the similarity threshold.",src:"deck 7 · slide 12",kw:["refusal","refuse","threshold","know"]},
+ {x:300,y:202,t:"Pinecone stores each vector together with the original chunk text as metadata.",src:"lecture 5 · 18:20",kw:["pinecone","store","vector","metadata"]}
+];
+var orbsG=document.getElementById("orbs"),tip=document.getElementById("tip");
+chunks.forEach(function(ch){var g=document.createElementNS(NS,"g");var m=document.createElementNS(NS,"circle");m.setAttribute("cx",ch.x);m.setAttribute("cy",ch.y);m.setAttribute("r",3);m.setAttribute("fill","rgba(47,107,255,0.18)");m.setAttribute("stroke","rgba(47,107,255,0.45)");m.setAttribute("stroke-width","0.8");m.style.transition="opacity .45s";var hi=document.createElementNS(NS,"circle");hi.setAttribute("cx",ch.x-1);hi.setAttribute("cy",ch.y-1);hi.setAttribute("r","1");hi.setAttribute("fill","rgba(255,255,255,0.95)");g.appendChild(m);g.appendChild(hi);g.style.cursor="pointer";ch.m=m;ch.g=g;
+ g.addEventListener("mouseenter",function(){showTip(ch);});g.addEventListener("mouseleave",function(){tip.style.opacity=0;});orbsG.appendChild(g);});
+function hl(text){return text.split(/(\s+)/).map(function(w){var s=w.toLowerCase().replace(/[^a-z]/g,"");if(s.length>2&&lastToks.some(function(tk){return tk===s||(tk.length>3&&s.indexOf(tk)===0)||(s.length>4&&tk.indexOf(s)===0);}))return "<b>"+w+"</b>";return w;}).join("");}
+function showTip(ch){var sky=document.getElementById("sky"),r=sky.getBoundingClientRect(),sx=r.width/600,sy=r.height/270;document.getElementById("tip-t").innerHTML=hl(ch.t);var has=ch.sim&&ch.sim>0;document.getElementById("tip-bar").style.display=has?"block":"none";document.getElementById("tip-rel").style.display=has?"flex":"none";if(has){tip.querySelector(".lg-bar i").style.width=Math.round(ch.sim*100)+"%";document.getElementById("tip-s").textContent=ch.sim.toFixed(2);}document.getElementById("tip-c").textContent=ch.src;var lx=Math.max(118,Math.min(r.width-118,ch.x*sx));tip.style.left=lx+"px";tip.style.top=(ch.y*sy)+"px";tip.style.opacity=1;}
+
+var qRun=false;
+async function runQuery(q){if(qRun)return;qRun=true;qGlow=null;
+ var go=document.getElementById("q-go");go.disabled=true;document.getElementById("q-replay").classList.add("hide");document.getElementById("q-ans").classList.add("hide");
+ ["q-embed","q-search","q-rerank","q-answer"].forEach(function(id){pill(id,"pending");});
+ ["links","qstar","pulse","particles"].forEach(function(id){document.getElementById(id).innerHTML="";});
+ chunks.forEach(function(c){c.sim=0;c.m.setAttribute("r",3);c.m.setAttribute("fill","rgba(47,107,255,0.18)");c.g.style.opacity=1;});
+ lastToks=(q.toLowerCase().match(/[a-z]+/g)||[]);
+ var scored=chunks.map(function(c){var s=0;c.kw.forEach(function(k){lastToks.forEach(function(t){if(t===k||(t.length>3&&k.indexOf(t)===0))s++;});});return{c:c,s:s+Math.random()*0.25};});
+ scored.sort(function(a,b){return b.s-a.s;});
+ var matched=scored.slice(0,4).map(function(o,i){o.c.sim=0.9-i*0.06;return o.c;});
+
+ pill("q-embed","active");loader("q","embedding question via Nebius…");
+ var qt=document.getElementById("qtext");qt.textContent="“"+q+"”";qt.setAttribute("transform","translate(0,0)");
+ var pg=document.getElementById("particles"),parts=[];
+ for(var i=0;i<32;i++){var c=document.createElementNS(NS,"circle");var sx=300+rnd(-1,1)*70,sy=232+rnd(-1,1)*8;c.setAttribute("cx",sx);c.setAttribute("cy",sy);c.setAttribute("r",0);pg.appendChild(c);parts.push({el:c,sx:sx,sy:sy,arc:rnd(-1,1)*40,d:Math.random()*0.34,tw:rnd(0,6.3)});}
+ var vec=document.getElementById("vec");vec.textContent="[0.04, −0.21, 0.33, …] 1024-dim";
+ await anim(1000,function(p){var yy=-78*ease(p);qt.setAttribute("transform","translate(0,"+yy.toFixed(1)+")");qt.setAttribute("opacity",(p<0.4?p/0.4:Math.max(0,1-(p-0.4)/0.55)).toFixed(2));parts.forEach(function(pt){var lp=Math.max(0,Math.min(1,(p-pt.d)/(1-pt.d))),e=ease(lp);pt.el.setAttribute("cx",(pt.sx+(300-pt.sx)*e+Math.sin(e*Math.PI)*pt.arc).toFixed(1));pt.el.setAttribute("cy",(pt.sy+(135-pt.sy)*e).toFixed(1));pt.el.setAttribute("r",(2.4*(1-0.85*e)).toFixed(2));pt.el.setAttribute("opacity",(lp>=1?0:(0.5+0.5*Math.sin(pt.tw+p*22))*(1-0.5*e)).toFixed(2));});vec.setAttribute("opacity",(p>0.55?Math.max(0,1-Math.abs(p-0.78)/0.22):0).toFixed(2));});
+ pg.innerHTML="";await wait(450);
+ var qs=document.getElementById("qstar"),ring=document.createElementNS(NS,"circle"),glow=document.createElementNS(NS,"circle"),core=document.createElementNS(NS,"circle"),lbl=document.createElementNS(NS,"text");
+ [ring,glow,core].forEach(function(e){e.setAttribute("cx",C.x);e.setAttribute("cy",C.y);qs.appendChild(e);});ring.setAttribute("fill","#2f6bff");glow.setAttribute("fill","#5b8bff");glow.setAttribute("opacity","0.16");core.setAttribute("fill","#2f6bff");
+ lbl.setAttribute("x",C.x);lbl.setAttribute("y",C.y+22);lbl.setAttribute("text-anchor","middle");lbl.setAttribute("font-family","sans-serif");lbl.setAttribute("font-size","11");lbl.setAttribute("fill","#33476e");lbl.textContent="your question";qs.appendChild(lbl);
+ await anim(540,function(p){ring.setAttribute("r",(22*ease(p)).toFixed(1));ring.setAttribute("opacity",(0.3*(1-p)).toFixed(2));core.setAttribute("r",(5.4*back(Math.min(1,p*1.1))).toFixed(2));lbl.setAttribute("opacity",p.toFixed(2));});
+ qGlow=glow;pill("q-embed","done");
+
+ pill("q-search","active");loader("q","searching Pinecone · top-k…");await wait(900);
+ var lg=document.getElementById("links"),lines=matched.map(function(m){var ln=document.createElementNS(NS,"line");ln.setAttribute("x1",C.x);ln.setAttribute("y1",C.y);ln.setAttribute("x2",C.x);ln.setAttribute("y2",C.y);ln.setAttribute("opacity","0.8");lg.appendChild(ln);return ln;});
+ chunks.forEach(function(c){if(matched.indexOf(c)<0)c.g.style.opacity=0.25;});
+ await anim(850,function(p){matched.forEach(function(m,i){var lp=Math.max(0,Math.min(1,(p-i*0.07)/(1-0.21))),e=ease(lp);lines[i].setAttribute("x2",(C.x+(m.x-C.x)*e).toFixed(1));lines[i].setAttribute("y2",(C.y+(m.y-C.y)*e).toFixed(1));m.m.setAttribute("r",(3+2.4*e).toFixed(2));m.m.setAttribute("fill","rgba(47,107,255,"+(0.18+0.5*e).toFixed(2)+")");m.g.style.opacity=1;});});
+ pill("q-search","done");
+
+ pill("q-rerank","active");loader("q","reranking · cross-encoder…");await wait(800);
+ var pulseG=document.getElementById("pulse"),dts=matched.map(function(){var d=document.createElementNS(NS,"circle");d.setAttribute("r",2.2);pulseG.appendChild(d);return d;});
+ await anim(620,function(p){matched.forEach(function(m,i){var lp=Math.max(0,Math.min(1,(p-i*0.05)/(1-0.15))),e=ease(lp);dts[i].setAttribute("cx",(C.x+(m.x-C.x)*e).toFixed(1));dts[i].setAttribute("cy",(C.y+(m.y-C.y)*e).toFixed(1));dts[i].setAttribute("opacity",(lp>=1?0:0.85).toFixed(2));});});
+ pulseG.innerHTML="";pill("q-rerank","done");
+
+ pill("q-answer","active");loader("q","generating cited answer…");await wait(950);
+ var ans=document.getElementById("q-ans");document.getElementById("q-ans-t").textContent="Chunking splits a document into smaller passages — it divides the text for embedding without transforming it.";
+ var cc=document.getElementById("q-ans-c");cc.innerHTML="";matched.slice(0,3).forEach(function(m){var s=document.createElement("span");s.className="lg-cite";s.innerHTML='<i class="ti ti-star" aria-hidden="true"></i>'+m.src;cc.appendChild(s);});
+ ans.classList.remove("hide");ans.style.animation="lg-up .45s ease";
+ pill("q-answer","done");loader("q",false);go.disabled=false;document.getElementById("q-replay").classList.remove("hide");qRun=false;
+}
+
+var iFile=null,iRun=false;
+function setFile(name,size){iFile={name:name,size:size};document.getElementById("i-doc-n").textContent=name;document.getElementById("i-doc-s").textContent=Math.round(size/1024)+" KB";document.getElementById("i-doc").style.opacity=1;document.getElementById("i-go").disabled=false;}
+document.getElementById("i-file").addEventListener("change",function(e){var f=e.target.files[0];if(f)setFile(f.name,f.size);});
+document.getElementById("i-sample").addEventListener("click",function(){setFile("lecture_03.vtt",188416);});
+async function runIngest(){if(iRun||!iFile)return;iRun=true;
+ var go=document.getElementById("i-go");go.disabled=true;document.getElementById("i-summary").classList.add("hide");
+ ["i-read","i-chunk","i-embed","i-store"].forEach(function(id){pill(id,"pending");});
+ var grid=document.getElementById("i-chunks");grid.innerHTML="";document.getElementById("i-vault-c").textContent="0";
+
+ pill("i-read","active");loader("i","reading "+iFile.name+"…");await wait(800);pill("i-read","done");
+
+ pill("i-chunk","active");loader("i","chunking · ≈512 tokens…");
+ var tiles=[];for(var i=0;i<12;i++){var d=document.createElement("div");d.className="lg-tile";d.textContent="c"+(i+1);d.style.opacity="0";d.style.transform="scale(.6)";grid.appendChild(d);tiles.push(d);}
+ for(var i=0;i<12;i++){await wait(55);tiles[i].style.opacity="1";tiles[i].style.transform="scale(1)";}
+ await wait(350);pill("i-chunk","done");
+
+ pill("i-embed","active");
+ await anim(1500,function(p){var n=Math.round(p*42);loader("i","embedding via Nebius · "+n+"/42 chunks");var lit=Math.round(p*12);tiles.forEach(function(t,idx){if(idx<lit){t.style.background="rgba(47,107,255,0.9)";t.style.color="#fff";}});});
+ pill("i-embed","done");
+
+ pill("i-store","active");loader("i","upserting to Pinecone…");
+ for(var i=0;i<12;i++){tiles[i].style.transform="translateX(220px) scale(0.2)";tiles[i].style.opacity="0";document.getElementById("i-vault-c").textContent=Math.round((i+1)/12*42);await wait(90);}
+ await wait(300);pill("i-store","done");loader("i",false);
+ document.getElementById("i-sum-t").textContent="Added 42 chunks from "+iFile.name+" — now searchable in Query.";
+ document.getElementById("i-summary").classList.remove("hide");document.getElementById("i-summary").style.animation="lg-up .45s ease";
+ go.disabled=false;iRun=false;
+}
+
+function setTab(t){document.getElementById("panel-query").classList.toggle("hide",t!=="query");document.getElementById("panel-ingest").classList.toggle("hide",t!=="ingest");Array.prototype.forEach.call(document.querySelectorAll("#seg button"),function(b){b.classList.toggle("on",b.getAttribute("data-tab")===t);});}
+Array.prototype.forEach.call(document.querySelectorAll("#seg button"),function(b){b.addEventListener("click",function(){setTab(this.getAttribute("data-tab"));});});
+document.getElementById("q-go").addEventListener("click",function(){var v=document.getElementById("q-input").value.trim();if(v)runQuery(v);});
+document.getElementById("q-input").addEventListener("keydown",function(e){if(e.key==="Enter"){var v=this.value.trim();if(v)runQuery(v);}});
+document.getElementById("q-replay").addEventListener("click",function(){runQuery(document.getElementById("q-input").value.trim()||"what is chunking?");});
+Array.prototype.forEach.call(document.querySelectorAll(".lg-chip"),function(ch){ch.addEventListener("click",function(){var q=this.getAttribute("data-q");document.getElementById("q-input").value=q;runQuery(q);});});
+document.getElementById("i-go").addEventListener("click",runIngest);
+})();
+</script>

@@ -12,16 +12,18 @@ in a threadpool, keeping the event loop free.
 from __future__ import annotations
 
 from collections.abc import Iterator
+from pathlib import Path
 
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, File, HTTPException, Query, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 
 from rag.config import load_settings
 from rag.events import StepEvent
-from rag.ingest import _MANIFEST, ingest_corpus_stream
+from rag.ingest import _MANIFEST, ingest_corpus_stream, ingest_file_stream
 from rag.pinecone_store import ensure_index
 from rag.query import query_stream
+from rag.sparse import _PARAMS, load_bm25
 
 app = FastAPI(title="RAG Simulator — Glass-Box API")
 
@@ -64,9 +66,29 @@ def status() -> dict:
     }
 
 
+@app.post("/upload")
+async def upload(file: UploadFile = File(...)) -> dict:
+    """Save an uploaded transcript into the corpus dir so /ingest?file= can run it.
+    Only .txt for now (slide plumbing pending)."""
+    name = Path(file.filename or "").name  # strip any path components
+    if not name.lower().endswith(".txt"):
+        raise HTTPException(400, "Only .txt transcripts are supported for now.")
+    dest = load_settings().transcripts_dir / name
+    dest.write_bytes(await file.read())
+    return {"filename": name}
+
+
 @app.get("/ingest")
-def ingest(force: bool = Query(False)) -> StreamingResponse:
+def ingest(force: bool = Query(False), file: str | None = Query(None)) -> StreamingResponse:
+    """Stream ingestion. With ?file= ingest just that file (reusing the existing
+    corpus-wide BM25 so we don't refit/overwrite it); otherwise the whole dir."""
     s = load_settings()
+    if file:
+        path = s.transcripts_dir / Path(file).name
+        if not path.exists():
+            raise HTTPException(404, f"{file} not found in transcripts dir.")
+        bm25 = load_bm25() if _PARAMS.exists() else None
+        return _sse(ingest_file_stream(path, force=force, bm25=bm25))
     return _sse(ingest_corpus_stream(s.transcripts_dir, force=force))
 
 

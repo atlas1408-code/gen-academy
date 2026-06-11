@@ -213,25 +213,36 @@ Where slide decks exist, ingest them alongside transcripts under the same `lectu
 
 ## 9. Configuration (`.env.example` + `config.py`)
 
+> **As-built values shown below** (updated after Phase 0–3a). The original plan
+> defaults (`bge-en-icl`/1024-dim, `Meta-Llama-3.1-70B`, cosine, cutoff 0.30)
+> were superseded — see §14 and the build log §15 for why.
+
 ```
 # Nebius Token Factory (OpenAI-compatible)
 NEBIUS_API_KEY=
-NEBIUS_BASE_URL=https://api.tokenfactory.nebius.com/v1/   # (studio.nebius.com alias may still work)
-NEBIUS_EMBED_MODEL=BAAI/bge-en-icl                        # 1024-dim, English. Alt: Qwen/Qwen3-Embedding-8B (4096-dim, top quality)
-NEBIUS_LLM_MODEL=meta-llama/Meta-Llama-3.1-70B-Instruct   # quality. Alt: -3.1-8B-Instruct for speed/cost
+NEBIUS_BASE_URL=https://api.tokenfactory.nebius.com/v1/
+NEBIUS_EMBED_MODEL=Qwen/Qwen3-Embedding-8B               # 4096-dim — ONLY embedder on Nebius TF
+NEBIUS_LLM_MODEL=meta-llama/Llama-3.3-70B-Instruct       # 3.1-70B not offered; 3.3 is the swap
 
 # Pinecone
 PINECONE_API_KEY=
 PINECONE_INDEX=rag-simulator
-EMBED_DIM=1024             # MUST equal embedding model dim (bge-en-icl=1024; Qwen3-Embedding-8B=4096)
-PINECONE_METRIC=cosine     # switch to dotproduct when hybrid is enabled
+PINECONE_CLOUD=aws                 # serverless spec
+PINECONE_REGION=us-east-1          # free-tier serverless region
+EMBED_DIM=4096                     # MUST equal embedding model dim (Qwen3-Embedding-8B=4096)
+PINECONE_METRIC=dotproduct         # required for hybrid (dense+sparse)
+
+# Corpus paths
+TRANSCRIPTS_DIR=Input-Data/Transcripts
+SLIDES_DIR=Input-Data/Slides
 
 # Tunables
 CHUNK_SIZE=512
 CHUNK_OVERLAP=80
 TOP_K=8
-RERANK_TOP_N=4             # Phase 2
-SIMILARITY_CUTOFF=0.30     # below this → refuse (tune on eval set)
+RERANK_TOP_N=4             # reranker deferred to Brev (see §15)
+SIMILARITY_CUTOFF=0.40     # tuned on eval set for hybrid α=0.7 (answerable≥0.494, unanswerable≤0.300)
+HYBRID_ALPHA=0.7           # score = α·dense + (1-α)·sparse; 1.0=dense only, 0.0=sparse only
 ```
 
 LlamaIndex wiring: use the Nebius integration packages (`llama-index-llms-nebius`, `llama-index-embeddings-nebius`) or the generic `OpenAILike` / `OpenAILikeEmbedding` pointed at `NEBIUS_BASE_URL`. Vector store via `llama-index-vector-stores-pinecone` (`PineconeVectorStore`).
@@ -309,8 +320,99 @@ Build **correctness before polish**: get the Phase 1 CLI slice provably working 
 
 ---
 
-## 14. Open decisions to confirm during Phase 0
-1. **[RESOLVED — default chosen]** Embedding model: **`BAAI/bge-en-icl` (1024-dim)** — English, lightweight, pairs with `EMBED_DIM=1024`. Upgrade option: `Qwen/Qwen3-Embedding-8B` (4096-dim) for top quality at higher storage/cost (set `EMBED_DIM=4096` + recreate index). Confirm live on the [models page](https://tokenfactory.nebius.com/models?modality=embedding).
-2. **[RESOLVED — default chosen]** Generation model: **`meta-llama/Meta-Llama-3.1-70B-Instruct`** for faithful answers; drop to `-3.1-8B-Instruct` if latency/cost pushes past the 6s ceiling. Confirm/browse newer chat models on the models page.
+## 14. Open decisions — all resolved (confirmed against live Nebius/Pinecone)
+1. **[RESOLVED — forced]** Embedding model: **`Qwen/Qwen3-Embedding-8B` (4096-dim)**. The planned `BAAI/bge-en-icl` returns 404 on this Nebius Token Factory account — Qwen3-Embedding-8B is the **only** embedder offered, and it's the plan's documented upgrade path. `EMBED_DIM=4096`, index created at 4096.
+2. **[RESOLVED — forced]** Generation model: **`meta-llama/Llama-3.3-70B-Instruct`**. The planned `Meta-Llama-3.1-70B-Instruct` isn't listed; 3.3-70B is the like-for-like (newer) swap. (Strong alternates seen on the account: DeepSeek-V3.2, Qwen3-235B, gpt-oss-120b.)
 3. **[RESOLVED — No]** Audio is **not** available, so Whisper re-transcription is out of scope. Rely on glossary cleaning + clean slide text + hybrid retrieval (§8.3, §8.5).
-4. **[TODO — researching]** Hybrid + sparse encoder choice (BM25 vs SPLADE) and whether to recreate the Pinecone index with `dotproduct` metric (hybrid requires it). See the hybrid/sparse reference reading shared alongside this plan.
+4. **[RESOLVED — BM25 + dotproduct]** Hybrid uses **BM25** (`pinecone-text`, CPU, recovers exact jargon) over SPLADE (GPU-heavy). Index **recreated as `dotproduct`**; dense vectors L2-normalized (so dotproduct == cosine); per-chunk dense + sparse stored; weighting applied to query vectors only. Tuned **α=0.7** (ties dense on retrieval, adds lexical recall).
+
+---
+
+## 15. Build log & as-built state (living — updated through Phase 3a)
+
+This section records what was actually built, key decisions that diverged from
+the original plan, and measured findings. Treat §1–§13 as the design intent and
+this as the ground truth of the implementation.
+
+### 15.1 Phase status
+| Phase | Status | Notes |
+|---|---|---|
+| 0 — Setup | ✅ done | Nebius embed + Pinecone upsert/query smoke test passes |
+| 1 — CLI slice | ✅ done | ingest/query/refusal/idempotency all verified on `week1-session1.txt` |
+| 2 — Quality | ✅ core done | cleaning + hybrid + eval done; reranker & corpus-scaling deferred (below) |
+| 3a — SSE backend | ✅ done | `/status`, `/ingest`, `/query` stream `StepEvent`s; validated via curl |
+| 3b — React UI | ⏸ pending design | building against `frontend/API.md`; serious/educational style (not retro) |
+| 4 — Eval & deliverables | ⏳ not started | eval harness exists; report/Gamma/video/GitHub pending |
+
+### 15.2 Environment & infra divergences from the plan
+- **Repo lives at `Week-2/` root**, not a `rag-simulator/` subfolder. Corpus is `Input-Data/Transcripts` + `Input-Data/Slides` (reusing existing dirs), not `data/`.
+- **Python 3.12** via `uv` (`.venv/`) — system Python 3.14 was too new for the dependency wheels.
+- **Pinecone accessed via the official `pinecone` client directly** (not LlamaIndex `VectorStoreIndex`/query engine). Embeddings + generation still go through the LlamaIndex Nebius wrappers. Rationale: the glass-box needs explicit, per-stage control to emit `StepEvent`s; a black-box query engine hides those stages.
+- **Only two API keys needed** (`NEBIUS_API_KEY`, `PINECONE_API_KEY`). LlamaIndex is local/open-source. Brev not used yet (reranker deferred).
+- **Pinecone namespace** `corpus` holds the live vectors (smoke test used a throwaway `smoke` namespace).
+
+### 15.3 Eval findings (the graded substance)
+On the 13-question set (`eval/questions.yaml`), retrieval scored via timestamp-overlap (`eval/run_eval.py`):
+- **Dense baseline is already saturated:** hit@k **100%**, hit@3 **100%**, MRR **0.850**. On a small, now-cleaned single-lecture corpus the embeddings already find the right chunk for every answerable question.
+- **Dense vs hybrid (required comparison):** hybrid **α=0.7 ties dense** exactly on every retrieval metric; pushing more weight to sparse (α≤0.5) *slightly hurts* (hit@3 90%, MRR ~0.80) as keyword noise creeps into semantic questions. Honest conclusion: **hybrid gives no measurable retrieval lift on this corpus** — its value is at scale and for exact-jargon queries. Kept α=0.7 as cheap lexical insurance.
+- **Refusal cutoff tuned on data, not guessed:** the plan default `0.30` was too low (off-topic-but-tech-adjacent questions leaked through: Tesla 0.341, Kubernetes 0.427 on the dense scale). On the production hybrid α=0.7 scale, answerable top-scores are ≥0.494 and unanswerable ≤0.300, so **`SIMILARITY_CUTOFF=0.40`** gives 100% correct refusal + 100% answerable retention.
+- **Cleaning impact:** glossary fixed ~30 ASR manglings per ingest (11× "cloud code"→"Claude Code"); 0 "cloud code" remain in the stored corpus.
+
+### 15.4 Latency (vs the ≤6s target — needs a Phase 4 pass)
+End-to-end query measured at **~6–8s**, currently **over budget**:
+- question embedding: ~0.6s (warm) to ~3.7s (cold) — the 8B embedder is the only one Nebius offers, so this floor is somewhat fixed.
+- hybrid retrieve: ~3s (higher than expected for Pinecone; suspect serverless cold-start).
+- generation (Llama-3.3-70B): ~4–5s.
+- ingest upsert of 87 vectors: ~33s (also suspected cold-start).
+Phase 4 mitigations to try: query-embedding cache, warm/parallel calls, a faster generation model (e.g. an `-fast` variant), and re-measuring after warm-up.
+
+### 15.5 Deferred (intentionally)
+- **Cross-encoder reranker (Phase 2d):** deferred to the **end, to run on NVIDIA Brev (GPU)**. It's a drop-in — it only re-orders the `Source` list between retrieve and generate, so the contract is unchanged. Because refusal can't move onto the rerank score until then, refusal currently lives on the hybrid similarity score (cutoff 0.40, §15.3). `torch`/`sentence-transformers` not yet installed.
+- **Slide ingestion + remaining transcripts (Phase 2 "scale corpus"):** deferred until that data exists. The Pinecone metadata schema already carries `content_type`/`slide_number`/`deck_source`, and `ingest_dir` fits BM25 corpus-wide, so adding files is low-friction.
+
+### 15.6 As-built file map (what actually exists)
+```
+Week-2/
+├── backend/
+│   ├── app.py                  # FastAPI: /status, /ingest, /query (SSE)
+│   ├── requirements.txt
+│   └── rag/
+│       ├── config.py           # .env loader → typed Settings
+│       ├── nebius.py           # LlamaIndex Nebius embed + LLM
+│       ├── pinecone_store.py   # index ensure/recreate, l2_normalize
+│       ├── loader.py           # transcript parser → timestamped segments
+│       ├── cleaning.py         # glossary + OOV scan (§8.3)
+│       ├── sparse.py           # BM25 sparse encoder (hybrid)
+│       ├── ingest.py           # load→clean→chunk→embed→upsert (+ stream)
+│       ├── query.py            # embed→retrieve→refuse/generate (+ stream)
+│       ├── events.py           # StepEvent schema + SSE
+│       └── cli.py              # ingest / ask / clean-report / manifest
+├── eval/
+│   ├── questions.yaml          # 13 Qs across 4 categories
+│   └── run_eval.py             # hit@k / hit@3 / MRR / refusal; --compare
+├── frontend/
+│   └── API.md                  # SSE contract for the (pending) React UI
+├── Input-Data/{Transcripts,Slides}/
+├── .env / .env.example / .gitignore
+└── PLAN.md
+```
+(Local, gitignored: `.venv/`, `.env`, `backend/manifest.json`, `backend/bm25_params.json`, `backend/phase0_smoke.py`.)
+
+### 15.7 How to run (as-built)
+```bash
+# one-time: deps
+uv venv --python 3.12 .venv && uv pip install -r backend/requirements.txt
+
+# CLI
+cd backend
+../.venv/bin/python -m rag.cli ingest            # ingest corpus (idempotent)
+../.venv/bin/python -m rag.cli ask "what is a context window?"
+../.venv/bin/python -m rag.cli clean-report      # glossary fixes + OOV scan
+
+# eval
+../.venv/bin/python ../eval/run_eval.py           # dense baseline metrics
+../.venv/bin/python ../eval/run_eval.py --compare # dense vs hybrid table
+
+# API (for the frontend)
+../.venv/bin/python -m uvicorn app:app --port 8000
+```

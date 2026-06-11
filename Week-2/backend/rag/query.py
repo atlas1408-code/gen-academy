@@ -39,6 +39,7 @@ class Source:
     timestamp_start: str
     timestamp_end: str
     text: str
+    speaker: str = ""
 
 
 @dataclass
@@ -53,6 +54,7 @@ def _to_sources(res) -> list[Source]:
     sources = []
     for m in res.get("matches", []):
         md = m.get("metadata", {})
+        speakers = md.get("speakers", []) or []
         sources.append(Source(
             score=m["score"],
             title=md.get("title", ""),
@@ -60,6 +62,7 @@ def _to_sources(res) -> list[Source]:
             timestamp_start=md.get("timestamp_start", ""),
             timestamp_end=md.get("timestamp_end", ""),
             text=md.get("text", ""),
+            speaker=", ".join(speakers) if isinstance(speakers, list) else str(speakers),
         ))
     return sources
 
@@ -97,8 +100,10 @@ def _build_context(sources: list[Source]) -> str:
 
 
 def _sources_payload(sources: list[Source], n: int = 5) -> list[dict]:
+    # Small payload for the hover card: a couple lines of text + useful metadata.
     return [{"score": round(s.score, 3), "title": s.title,
-             "timestamp": s.timestamp_start, "text": s.text[:200]}
+             "timestamp": s.timestamp_start, "timestamp_end": s.timestamp_end,
+             "speaker": s.speaker, "text": s.text[:240]}
             for s in sources[:n]]
 
 

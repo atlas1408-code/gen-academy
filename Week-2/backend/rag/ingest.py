@@ -181,13 +181,20 @@ def ingest_file_stream(path: str | Path, *, force: bool = False, bm25=None):
             },
         })
 
-    yield event("upsert", "start", f"Upserting {len(records)} vectors to Pinecone…",
-                clock, vector_count=len(records))
+    total = len(records)
+    yield event("upsert", "start", f"Upserting {total} vectors to Pinecone…",
+                clock, vector_count=total, upserted=0)
     index = ensure_index()
-    for i in range(0, len(records), 100):  # Pinecone upsert batch cap
-        index.upsert(vectors=records[i:i + 100], namespace=_NAMESPACE)
-    yield event("upsert", "complete", f"Upserted {len(records)} vectors (dense + sparse)",
-                clock, vector_count=len(records))
+    # Small batches so the long upsert reports real progress (§ glass-box).
+    BATCH = 15
+    upserted = 0
+    for i in range(0, total, BATCH):
+        index.upsert(vectors=records[i:i + BATCH], namespace=_NAMESPACE)
+        upserted = min(upserted + BATCH, total)
+        yield event("upsert", "progress", f"Upserted {upserted}/{total} vectors…",
+                    clock, upserted=upserted, vector_count=total)
+    yield event("upsert", "complete", f"Upserted {total} vectors (dense + sparse)",
+                clock, vector_count=total, upserted=total)
 
     manifest[path.name] = {
         "hash": fhash,
