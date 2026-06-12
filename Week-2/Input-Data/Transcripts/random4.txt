@@ -1,0 +1,106 @@
+WEBVTT
+1
+00:00:01.000 --> 00:00:05.500
+Alex: Hey team, thanks for joining the call. Let's talk about our AI strategy for the next quarter.
+2
+00:00:06.000 --> 00:00:11.800
+Sarah: Sounds good, Alex. I think our main priority should be integrating Gemini models for structured data extraction.
+3
+00:00:12.300 --> 00:00:18.000
+David: Agreed. I've been experimenting with the Gemini 1.5 Pro API, and its long context window is a game changer.
+4
+00:00:18.500 --> 00:00:24.200
+Sarah: Yes, and we can also use Gemini 1.5 Flash for faster latency-sensitive tasks like real-time text analysis.
+5
+00:00:24.700 --> 00:00:28.000
+Alex: Great. David, what is the plan for building the RAG pipeline? How will we store the knowledge base?
+6
+00:00:28.500 --> 00:00:34.000
+David: I was thinking we should use a vector database like Pinecone or pgvector for storing document embeddings.
+7
+00:00:34.500 --> 00:00:38.200
+Sarah: I recommend pgvector since we are already using PostgreSQL for our main application database.
+8
+00:00:38.700 --> 00:00:43.100
+Alex: That makes sense. It keeps our stack simpler. What about the embedding model?
+9
+00:00:43.600 --> 00:00:48.500
+David: We should use the text-embedding-004 model from Google. It's efficient and has great benchmark results.
+10
+00:00:49.000 --> 00:00:53.000
+Sarah: True. But we also need to decide on our chunking strategy. Standard 500-token chunks?
+11
+00:00:53.500 --> 00:00:58.200
+David: I think semantic chunking might work better since our technical manuals have varying paragraph lengths.
+12
+00:00:58.700 --> 00:01:03.500
+Alex: Semantic chunking sounds more precise. How does it affect retrieval speed though?
+13
+00:01:04.000 --> 00:01:09.100
+David: It adds a bit of pre-processing overhead during ingestion, but retrieval query latency remains the same.
+14
+00:01:09.600 --> 00:01:14.300
+Sarah: Let's also implement hybrid search. Combining semantic results with keyword search via BM25.
+15
+00:01:14.800 --> 00:01:19.500
+David: Yes! Hybrid search with Reciprocal Rank Fusion will give us the most relevant context.
+16
+00:01:20.000 --> 00:01:24.000
+Alex: Good idea. What about handling user queries that are out-of-domain?
+17
+00:01:24.500 --> 00:01:29.800
+Sarah: We can use a guardrail model or a quick classifier prompt to reject irrelevant queries at the gateway.
+18
+00:01:30.300 --> 00:01:35.000
+David: That will save us token costs. I can write a system prompt to classify query intent first.
+19
+00:01:35.500 --> 00:01:39.900
+Alex: Perfect. Speaking of costs, do we have an estimation of monthly API costs?
+20
+00:01:40.400 --> 00:01:45.500
+Sarah: Based on our current volume, using Gemini 1.5 Flash for classification and Flash/Pro mixed for RAG will be under $500.
+21
+00:01:46.000 --> 00:01:50.000
+Alex: That's very reasonable. And what are we doing about evaluation? How do we know if it's working well?
+22
+00:01:50.500 --> 00:01:55.200
+David: I plan to set up Ragas to measure faithfulness, answer relevance, and context recall.
+23
+00:01:55.700 --> 00:02:00.500
+Sarah: We should also curate a golden dataset of about 100 test questions to run assertions on every release.
+24
+00:02:01.000 --> 00:02:04.800
+Alex: Excellent. We definitely need automated eval metrics to prevent regression.
+25
+00:02:05.300 --> 00:02:10.000
+David: I can build a pipeline that runs these evaluations nightly and reports results to our dashboard.
+26
+00:02:10.500 --> 00:02:14.500
+Sarah: Let's also check for security. We need to prevent prompt injection and data leakage.
+27
+00:02:15.000 --> 00:02:20.200
+David: Definitely. We will sanitize input and ensure system instructions are completely separated from user inputs.
+28
+00:02:20.700 --> 00:02:24.000
+Alex: That is critical. Let's make sure the security team audits the prompts before deployment.
+29
+00:02:24.500 --> 00:02:29.100
+Sarah: Understood. I will document the prompt versions and security rules in our wiki.
+30
+00:02:29.600 --> 00:02:34.500
+Alex: Thanks, Sarah. David, how long will it take to get a working prototype of the ingestion pipeline?
+31
+00:02:35.000 --> 00:02:39.800
+David: I should have it ready by Friday. I'll need some sample manuals to test the parsing logic.
+32
+00:02:40.300 --> 00:02:44.200
+Sarah: I will upload a few PDF manuals to our shared drive right after this meeting.
+33
+00:02:44.700 --> 00:02:49.000
+Alex: Awesome. Let's meet again on Monday to review the prototype and the eval results.
+34
+00:02:49.500 --> 00:02:52.000
+David: Sounds like a plan. Thanks, everyone!
+35
+00:02:52.500 --> 00:02:54.000
+Sarah: Bye, talk next week.
