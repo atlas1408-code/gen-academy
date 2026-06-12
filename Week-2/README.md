@@ -63,7 +63,7 @@ graph TD
     QE --> H[Pinecone Hybrid Search top-8]
     H --> R[Pinecone Cross-Encoder Reranker top-4]
     R --> C{Rerank Score > 0.10?}
-    C -- No --> REF[Refuse: "I don't know"]
+    C -- No --> REF["Refuse: I don't know"]
     C -- Yes --> G[Grounded Prompt: Llama-3.3-70B-Instruct]
     G --> O[Grounded, Citation-Backed Answer or Refusal]
 ```
