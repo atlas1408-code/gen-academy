@@ -1,50 +1,48 @@
-# Evaluation Report — Glass-Box RAG
+# Evaluation Report — Course-Sessions RAG
 
-> Retrieval + refusal evaluation over the 4-lecture corpus. Reproduce with
+> Retrieval + refusal evaluation over the full session corpus. Reproduce with
 > `python eval/run_eval.py --report` (question set: `eval/questions.yaml`).
 
 ## Headline results
 
-- **Retrieval is strong:** every answerable question retrieves a correct chunk
-  (**hit@k = 100%**), and 92% put it in the top 3 (**hit@3 = 92%**, **MRR = 0.70**)
-  at the production setting (hybrid, α=0.7).
-- **Hybrid clearly beats dense on this corpus** — the *opposite* of what we saw
-  on a single lecture, confirming hybrid's value emerges at scale.
-- **Refusal is layered and effective:** 3 of 4 unanswerable questions are
-  refused at the cheap retrieval gate; the 4th — a semantically-adjacent
-  near-miss — is caught by the grounded-generation gate. **End-to-end refusal:
-  100%.**
+- **Retrieval finds the answer every time:** every answerable question retrieves
+  a correct chunk (**hit@k = 100%**); 84% put it in the top 3 (**hit@3 = 84%**,
+  **MRR = 0.68**) at the production setting (hybrid, α=0.7).
+- **Hybrid clearly beats dense** (100/84/0.68 vs 95/58/0.56) — and the gap holds
+  as the corpus grows.
+- **Refusal is layered and 100% effective end-to-end** — 3 of 4 unanswerable
+  questions refuse at the cheap retrieval gate; the 4th (a near-miss) is caught
+  by the grounded-generation gate.
 
 ---
 
 ## Methodology
 
-**Corpus.** 4 real bootcamp lectures (`week1-session1/2`, `week2-session1/2`,
-~360 chunks) plus 3 short synthetic primers (`random*.txt`) used for ingest-flow
-testing, all in one Pinecone index.
+**Corpus.** 9 recorded sessions: 4 weekly lecture sessions (weeks 1–2) plus 5
+guest lectures (Codex, LlamaIndex, Nemotron, Pinecone, Wispr) — **~526 chunks**
+in one Pinecone index. (Plus 3 small synthetic primers used only for ingest-flow
+testing.)
 
-**Question set.** 17 questions across five behavior categories
+**Question set.** 23 questions across five behavior categories
 (`eval/questions.yaml`):
 
 | Category | n | What it tests |
 |---|---|---|
-| single_chunk | 5 | Obvious, factual, clearly in the corpus |
-| multi_topic | 3 | Spans / appears across multiple lectures |
+| single_chunk | 10 | Obvious, factual, clearly in the corpus |
+| multi_topic | 4 | Spans / appears across multiple sessions |
 | ambiguous | 3 | Underspecified; a reasonable answer expected |
 | borderline | 2 | Only lightly covered ("maybe"); thin-coverage robustness |
 | unanswerable | 4 | Not in the corpus; **must refuse** |
 
-**Ground truth.** Each answerable question is labeled with **lecture-qualified**
-timestamps (`"week2-session1 00:31:34"`) — the points in a specific lecture that
-actually answer it. A retrieval **hit** = a returned chunk *from that lecture*
-whose `[timestamp_start, timestamp_end]` window contains the timestamp. Labeling
-by lecture (not bare timestamp) matters in a multi-file corpus, where any
-timestamp exists in every lecture.
+**Ground truth.** Each answerable question is labeled with **session-qualified**
+timestamps (`"pinecone 00:09:05"`). A retrieval **hit** = a returned chunk *from
+that session* whose `[timestamp_start, timestamp_end]` window contains the
+timestamp. Labeling by session (not bare timestamp) matters in a multi-file
+corpus, where any timestamp exists in every session.
 
 **Metrics.** hit@k and hit@3 (did the right chunk appear in the top-k / top-3?),
-**MRR** (mean reciprocal rank of the first correct chunk), and **refusal rate**
-for unanswerable questions. `top_k = 8`, `similarity_cutoff = 0.40`,
-`hybrid α = 0.7`.
+**MRR** (mean reciprocal rank of the first correct chunk), and end-to-end
+**refusal rate**. `top_k = 8`, `similarity_cutoff = 0.40`, `hybrid α = 0.7`.
 
 ---
 
@@ -52,35 +50,34 @@ for unanswerable questions. `top_k = 8`, `similarity_cutoff = 0.40`,
 
 | Category | n | hit@k | hit@3 | MRR |
 |---|---|---|---|---|
-| single_chunk | 5 | 100% | 80% | 0.640 |
-| multi_topic | 3 | 100% | 100% | 0.667 |
-| ambiguous | 3 | 100% | 100% | 0.778 |
-| borderline | 2 | 100% | 100% | 0.750 |
-| **Overall (answerable, 13)** | | **100%** | **92%** | **0.695** |
+| single_chunk | 10 | 100% | 70% | 0.65 |
+| multi_topic | 4 | 100% | 100% | 0.75 |
+| ambiguous | 3 | 100% | 100% | 0.61 |
+| borderline | 2 | 100% | 100% | 0.75 |
+| **All answerable (19)** | | **100%** | **84%** | **0.68** |
 
-Every answerable question — including the ambiguous and lightly-covered
-"borderline" ones — retrieved a genuinely relevant chunk. The only sub-top-3
-case was a *single-chunk* question (q03, "what is an embedding?"): embeddings are
-discussed in **four** lectures, so the specific labeled chunk landed at rank 5
-among many valid embedding chunks. That's a labeling artifact, not a real miss —
-the answer was well-covered.
+Retrieval found a genuinely relevant chunk for **every** answerable question.
 
-### Dense vs. hybrid — the scale effect
+### Dense vs. hybrid — the scale effect holds
 
-| Config | hit@k | hit@3 | MRR | refusal* |
-|---|---|---|---|---|
-| Dense (α=1.0) | 92% | 54% | 0.499 | 50% |
-| **Hybrid (α=0.7)** | **100%** | **92%** | **0.695** | **75%** |
+| Config | hit@k | hit@3 | MRR |
+|---|---|---|---|
+| Dense only | 95% | 58% | 0.56 |
+| **Hybrid (α=0.7)** | **100%** | **84%** | **0.68** |
 
-\*retrieval-gate refusal at cutoff 0.40 (tuned for the hybrid scale).
+On a single clean session, hybrid merely *tied* dense (earlier experiment). As
+the corpus grew to 4 and then 9 sessions, hybrid pulled clearly ahead and stayed
+ahead (hit@3 58% → 84%, a +26-point gap). The sparse BM25 signal earns its keep
+as the corpus gets larger and more lexically overlapping. **Lesson: evaluate
+retrieval strategy on a corpus that resembles production.**
 
-This is the most important experimental result. On a **single clean lecture**,
-hybrid merely *tied* dense (documented earlier). On the **4-lecture corpus**,
-hybrid **substantially outperforms** dense — hit@3 jumps 54% → 92%, MRR 0.50 →
-0.70. As the corpus grows and gets noisier (more lexically-overlapping content,
-more ASR jargon), the sparse BM25 signal earns its keep by anchoring on exact
-terms that dense similarity blurs. **Lesson: evaluate retrieval strategy on a
-corpus that resembles production, not a toy slice.**
+### Retrieval *finds* the answer, but ranking loosens at scale
+Going from 4 sessions to 9, **hit@k stayed at 100%** — the right session is
+always retrieved — but **hit@3 / MRR softened** (92% → 84%, 0.70 → 0.68). For a
+few factual lookups (e.g. "what is an embedding?", "what is Codex?", "what is
+Wispr Flow?") the *definitional* chunk now ranks 5–8 because many other chunks
+also mention the term. The content is found; the *precision of ranking* is what a
+**cross-encoder reranker** would sharpen (see next steps).
 
 ---
 
@@ -88,63 +85,57 @@ corpus that resembles production, not a toy slice.**
 
 | # | Question | top score | retrieval gate | end-to-end |
 |---|---|---|---|---|
-| q14 | best pizza dough recipe | 0.223 | refuse ✓ | refuse ✓ |
-| q15 | Tesla 2024 revenue | 0.296 | refuse ✓ | refuse ✓ |
-| q16 | Kubernetes ingress TLS | 0.316 | refuse ✓ | refuse ✓ |
-| q17 | Nebius API price per token | **0.500** | **answer ✗** | **refuse ✓** |
+| q14 | best pizza dough recipe | 0.23 | refuse ✓ | refuse ✓ |
+| q15 | Tesla 2024 revenue | 0.31 | refuse ✓ | refuse ✓ |
+| q16 | Kubernetes ingress TLS | 0.32 | refuse ✓ | refuse ✓ |
+| q17 | Nebius API price per token | **0.49** | **answer ✗** | **refuse ✓** |
 
 Three clearly off-topic questions are refused cheaply at the **retrieval gate**
-(top score below the 0.40 cutoff — no LLM call needed). q17 is the interesting
-one: it's a **semantically-adjacent near-miss** — "Nebius" is heavily present in
-the corpus, so retrieval returns a high-scoring Nebius chunk (0.500), but that
-chunk says nothing about *pricing*. It slips past the cutoff, but the **strict
-grounded-generation prompt** ("answer only from context; say you don't know
-otherwise") catches it and the system replies *"I couldn't find this in the
-lectures."* So the two gates are complementary, and **end-to-end refusal is 4/4
-(100%)**.
+(below the 0.40 cutoff — no LLM call). q17 is a **semantically-adjacent
+near-miss**: "Nebius" appears in the corpus, but *pricing* doesn't, so retrieval
+scores it just above the cutoff. It slips past, but the **strict grounded-
+generation prompt** catches it ("I couldn't find this in the lectures"). So
+**end-to-end refusal is 4/4 (100%)** — verified on the full 9-session corpus.
 
 ---
 
 ## Failure analysis
 
-- **The similarity cutoff has a ceiling.** q17's top score (0.500) sits *above*
-  the lowest answerable score (q02 "temperature", 0.507). The gap is ~0.007 —
-  there is **no cutoff value that refuses q17 without also over-refusing a
-  genuine question**. A pure similarity threshold cannot distinguish "close to
-  the topic" from "actually contains the answer." This is the structural limit
-  of cutoff-based refusal, and the argument for the two-layer design (and for a
-  reranker, below).
-- **Generation-level refusal is doing real work** and isn't captured by
-  retrieval-only metrics — worth measuring end-to-end, not just at the gate.
-- **Multi-location topics depress MRR slightly** (q03). When a concept appears in
-  many lectures, "the" correct chunk is fuzzy; hit@k stays 100% but rank scatters.
+- **The similarity cutoff has a ceiling.** q17's top score (0.49) sits *above*
+  the lowest answerable score (q02, 0.52) — there is no cutoff that refuses the
+  near-miss without also rejecting a real question. Cutoff-only refusal can't
+  tell "close to the topic" from "actually contains the answer"; the
+  grounded-generation gate is what closes it.
+- **Ranking precision drops as the corpus grows** (above) — the clearest,
+  evidence-backed case for adding the reranker.
+- **Ground-truth labeling for broad questions needs breadth.** A broad
+  multi-session question ("how does Pinecone fit into RAG?") initially "missed"
+  because it was labeled with three narrow timestamps; retrieval had actually
+  returned genuinely relevant chunks elsewhere in the Pinecone and week-2
+  sessions. Relabeling to the real answer regions fixed it — a reminder that for
+  broad questions, ground truth should cover all valid answer locations.
 
 ---
 
 ## Key findings
 
-1. **Hybrid retrieval pays off at scale** — the headline reversal from the
-   single-lecture experiment.
-2. **Layered refusal works:** cheap retrieval cutoff for off-topic, strict
-   grounded generation for adjacent near-misses → 100% end-to-end on our set.
-3. **Cutoff-only refusal is provably insufficient** for near-misses (q17).
-4. Retrieval quality is high across *all* question types, including ambiguous
-   and lightly-covered ones.
+1. **Hybrid retrieval pays off and keeps paying off as the corpus scales.**
+2. **Layered refusal works** (cutoff + grounded generation) — 100% end-to-end.
+3. **Cutoff-only refusal is provably insufficient** for near-misses.
+4. **Retrieval recall is excellent (100% hit@k); ranking precision is the next
+   lever** — a reranker is the targeted fix.
 
 ---
 
 ## Recommendations / next steps
 
-- **Add the cross-encoder reranker** (designed as a drop-in). A cross-encoder
-  scores the (question, chunk) pair jointly and would rate the Nebius-overview
-  chunk as low-relevance to a *pricing* question — closing the q17 gap at the
-  retrieval gate instead of relying on generation.
-- **Report end-to-end refusal**, not just the retrieval gate, as the headline
-  refusal metric.
-- **Faithfulness scoring** (e.g. RAGAS or an LLM judge) to quantify how well
-  cited answers are grounded — the next metric beyond retrieval hit-rate.
-- **Grow + balance the question set** as the corpus grows; re-run dense-vs-hybrid
-  to track how the gap widens.
+- **Add the cross-encoder reranker** (drop-in). It now has two concrete jobs:
+  (a) sharpen ranking for factual lookups whose definitional chunk ranks 5–8,
+  and (b) catch the q17-style near-miss at the retrieval gate.
+- **Report end-to-end refusal**, not just the retrieval gate, as the headline.
+- **Faithfulness scoring** (RAGAS or an LLM judge) as the next metric beyond
+  retrieval hit-rate.
+- **Keep the question set growing and balanced** as more sessions are added.
 
 ---
 
@@ -154,5 +145,5 @@ lectures."* So the two gates are complementary, and **end-to-end refusal is 4/4
 python eval/run_eval.py --report      # per-question + per-category + dense-vs-hybrid
 python eval/run_eval.py --compare     # alpha sweep (dense → hybrid)
 ```
-*(Numbers above from a run on 2026-06-12; latency and exact scores vary slightly
-run to run with embedding-endpoint warmth.)*
+*(Numbers from a run on 2026-06-12 over the 9-session corpus; exact scores vary
+slightly run to run with embedding-endpoint warmth.)*

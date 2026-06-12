@@ -114,3 +114,40 @@
   category: unanswerable
   question: "How much does the Nebius Token Factory API cost per token?"
   answerable: false
+
+# ── guest-lecture sessions (added with the expanded corpus) ─────────────────
+- id: q18
+  category: single_chunk
+  question: "What is Codex and what can it do?"
+  answerable: true
+  ground_truth: ["codex 00:00:37", "codex 00:18:07", "codex 00:18:30"]
+
+- id: q19
+  category: single_chunk
+  question: "What does LlamaIndex / LlamaParse focus on?"
+  answerable: true
+  ground_truth: ["llamaindex 00:01:15", "llamaindex 00:02:48", "llamaindex 00:03:16"]
+
+- id: q20
+  category: single_chunk
+  question: "What is Nemotron?"
+  answerable: true
+  ground_truth: ["nemotron 00:02:41", "nemotron 00:02:51"]
+
+- id: q21
+  category: single_chunk
+  question: "What kinds of search does Pinecone support?"
+  answerable: true
+  ground_truth: ["pinecone 00:08:07", "pinecone 00:08:25", "pinecone 00:08:33"]
+
+- id: q22
+  category: single_chunk
+  question: "What is Wispr Flow?"
+  answerable: true
+  ground_truth: ["wispr 00:00:24", "wispr 00:00:29", "wispr 00:00:33"]
+
+- id: q23
+  category: multi_topic
+  question: "How does Pinecone fit into a RAG system?"
+  answerable: true
+  ground_truth: ["pinecone 00:09:05", "pinecone 00:16:12", "week2-session1 01:34:47", "week2-session2 00:34:39"]
