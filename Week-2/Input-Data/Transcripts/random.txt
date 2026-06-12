@@ -1,0 +1,43 @@
+Maya Iyer
+
+Alright everyone, welcome back. Today's session is a focused primer on Retrieval-Augmented Generation, or RAG, which is going to be the backbone of a lot of what we build in the coming weeks.
+00:00:06
+
+So let's start with the core problem. A large language model only knows what it saw during training. It has no idea about your private documents, your company wiki, or anything that happened after its cutoff date. If you just ask it, it will often make something up that sounds confident but is wrong.
+00:00:21
+
+RAG fixes this by giving the model relevant context at the moment you ask the question. Instead of relying purely on what's baked into the weights, we retrieve the most relevant pieces of your own data and hand them to the model alongside the question.
+00:00:42
+
+The whole pipeline really has two halves. There's the ingestion side, which you do once per document, and there's the query side, which runs every single time someone asks a question. Let's walk through ingestion first.
+00:01:03
+
+Ingestion starts with loading and chunking. You take a document and split it into smaller passages, usually a few hundred tokens each, often with a little overlap between them. The overlap matters because you don't want to cut a sentence or an idea exactly at a boundary and lose the meaning.
+00:01:25
+
+Once you have chunks, you embed them. An embedding model converts each chunk of text into a vector, which is just a long list of numbers. The key property is that chunks with similar meaning end up close together in that vector space, even if they use different words.
+00:01:48
+
+Those vectors get stored in a vector database, like Pinecone. Alongside each vector we store the original text and some metadata, things like the source document, a timestamp, or a page number. That metadata is what lets us cite our answer later.
+00:02:10
+
+Now the query side. When a user asks a question, the first thing we do is embed the question using the exact same embedding model we used on the documents. This is important, because the question and the chunks need to live in the same vector space to be comparable.
+00:02:33
+
+Then we do a similarity search. The vector database finds the chunks whose vectors are closest to the question's vector, and returns the top matches, what people call top-k retrieval. Each match comes back with a similarity score telling us how close it was.
+00:02:55
+
+A really good trick here is hybrid retrieval. Pure semantic search is great for meaning, but it can miss exact keywords like a product name or an acronym. So we combine dense semantic search with sparse keyword search and blend the scores. You get the best of both worlds.
+00:03:18
+
+Here's a step a lot of beginners skip: the refusal path. If none of the retrieved chunks clear a similarity threshold, the right move is to say I don't know, rather than forcing the model to answer from weak or irrelevant context. A system that refuses honestly is far more trustworthy than one that always answers.
+00:03:42
+
+Finally, generation. We take the question plus the chunks that survived retrieval, and we put them into a prompt with strict instructions: answer only from the provided context, and cite your sources. The model then writes a grounded answer with citations pointing back to the original chunks.
+00:04:05
+
+And that's the loop. Embed the question, retrieve the relevant chunks, optionally rerank them, and generate a cited answer or refuse. The model's job shifts from remembering everything to reasoning over the evidence we give it.
+00:04:27
+
+One last point before we build. The quality of a RAG system lives and dies on retrieval. If you retrieve the wrong chunks, even the smartest model will give you a wrong answer. So most of your effort goes into chunking well, embedding well, and tuning that retrieval step. Generation is almost the easy part.
+00:04:49

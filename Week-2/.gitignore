@@ -22,3 +22,8 @@ backend/phase0_smoke.py
 
 # Fitted BM25 params (rebuilt on ingest)
 backend/bm25_params.json
+
+# Frontend build artifacts
+frontend/*.tsbuildinfo
+frontend/vite.config.js
+frontend/vite.config.d.ts
