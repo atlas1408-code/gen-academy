@@ -66,19 +66,33 @@ export function IngestView() {
         Upload any lecture transcript as a <b>.txt</b> file. Files already ingested are skipped automatically. (Slide decks coming soon.)
       </p>
 
-      {/* pipeline timeline */}
-      <div style={{ marginTop: 16 }}>
-        <StageTimeline stages={INGEST_STAGES} state={state} status={status} />
-      </div>
+      {/* pipeline — horizontal flow (linear ingest pipeline) */}
+      {state.terminal !== "idle" && (
+        <div style={{ marginTop: 18 }}>
+          <StageTimeline stages={INGEST_STAGES} state={state} status={status} orientation="horizontal" />
+        </div>
+      )}
 
       {state.terminal === "done" && (
-        <div className="glass" style={{ marginTop: 6, padding: "13px 15px", borderRadius: 13, display: "flex", alignItems: "center", gap: 10, animation: "lg-up .45s ease" }}>
-          <IconCircleCheck size={20} color="#0f8268" />
-          <div style={{ fontSize: 13, color: "var(--ink)" }}>
-            Ingested <b>{file?.name}</b>
-            {data.chunkCount ? ` — ${data.chunkCount} chunks` : ""}
-            {data.embeddingDim ? ` (${data.embeddingDim}-dim)` : ""} now searchable in Query.
+        <div className="glass" style={{ marginTop: 16, padding: "14px 16px", borderRadius: 13, animation: "lg-up .45s ease" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <IconCircleCheck size={20} color="#0f8268" />
+            <div style={{ fontSize: 13.5, color: "var(--ink)" }}>
+              Ingested <b>{file?.name}</b>
+              {data.segmentCount ? ` — ${data.segmentCount} segments → ` : " — "}
+              {data.chunkCount ? `${data.chunkCount} chunks` : ""}
+              {data.embeddingDim ? ` (${data.embeddingDim}-dim)` : ""} · now searchable in Query.
+            </div>
           </div>
+          {data.sampleChunk && (
+            <div style={{ marginTop: 10, paddingTop: 10, borderTop: "1px solid rgba(255,255,255,.6)" }}>
+              <div style={{ fontSize: 11, color: "var(--ink-mute)", marginBottom: 4 }}>sample chunk</div>
+              <div style={{ fontSize: "var(--fs-read)", color: "var(--ink-soft)", fontStyle: "italic", lineHeight: 1.5,
+                display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                “{data.sampleChunk}”
+              </div>
+            </div>
+          )}
         </div>
       )}
 

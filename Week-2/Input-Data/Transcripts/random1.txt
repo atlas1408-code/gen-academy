@@ -1,0 +1,34 @@
+Maya Iyer
+
+Last time we built a RAG pipeline end to end. Today is all about a question that decides whether any of that was worth it: how do we know the system is actually good? In other words, evaluation.
+00:00:05
+
+The first thing to understand is that a RAG system can fail in two very different places, and you have to measure them separately. It can fail at retrieval, meaning it pulled the wrong chunks, or it can fail at generation, meaning it had the right chunks but the answer drifted away from them.
+00:00:24
+
+Let's start with retrieval. The simplest metric is hit rate. For a set of test questions where you know which chunk holds the answer, hit rate is just the fraction of questions where that correct chunk shows up in the top results. If your hit rate is low, no language model can save you.
+00:00:48
+
+A slightly richer metric is mean reciprocal rank, or MRR. Instead of just asking whether the right chunk appeared, it rewards putting it near the top. If the correct chunk is ranked first you score one, if it's second you score one half, third one third, and so on. Higher is better.
+00:01:12
+
+Now the headline metric for generation is faithfulness. Faithfulness asks a sharp question: is every claim in the answer actually supported by the retrieved chunks? An answer can be fluent, confident, and completely unfaithful if the model invented details that were never in the context.
+00:01:38
+
+This is why citations matter so much. When the model points each claim back to a specific chunk and timestamp, faithfulness becomes checkable. You, or an automated judge, can read the cited chunk and confirm the claim is really there.
+00:02:01
+
+Two more metrics worth knowing. Context relevance asks whether the chunks you retrieved were actually on topic for the question. Answer relevance asks whether the final answer actually addressed what the user asked, rather than wandering into something adjacent.
+00:02:24
+
+A piece of evaluation people forget is the refusal test. You deliberately ask questions the corpus cannot answer, and you check that the system refuses instead of hallucinating. A bot that always answers is not impressive, it is dangerous. Refusing well is a feature, not a failure.
+00:02:49
+
+Tuning the refusal threshold is a balancing act. Set the cutoff too high and the system refuses good questions. Set it too low and junk leaks through and gets answered. The right way to pick it is empirically, on a labeled set, not by guessing a number.
+00:03:14
+
+Finally, do not ignore latency. An answer that takes thirty seconds is a different product from one that takes three, even if the text is identical. Measure end to end time alongside quality, because in practice users trade a little accuracy for speed all the time.
+00:03:39
+
+So the takeaway is this. Evaluate retrieval and generation separately, track hit rate and MRR for retrieval, faithfulness as your north star for generation, always test the refusal path, and keep an eye on latency. Measure first, then tune. That is how you turn a demo into something you can trust.
+00:04:03

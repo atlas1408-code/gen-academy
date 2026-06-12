@@ -1,0 +1,34 @@
+Maya Iyer
+
+Today we're going to talk about prompting, because the prompt is the single biggest lever you have over what a language model does, and most people use it badly at first.
+00:00:05
+
+Start with the mental model. A prompt has three parts. There's the system prompt, which sets the rules and persona and stays constant. There's the user prompt, which is the actual request. And there's the assistant turn, where the model responds, and which you can even pre-fill to steer the format.
+00:00:26
+
+The system prompt is where you do your heavy lifting. Things like "you are a careful medical assistant, only answer from the provided notes, refuse if unsure" belong here, because they apply to every single turn rather than being repeated each time.
+00:00:51
+
+Now, techniques. The simplest is zero-shot, where you just ask and hope the model already knows the task. It works surprisingly often for common tasks, and it's where you should always start before adding complexity.
+00:01:14
+
+Few-shot prompting is the next step. You give the model a handful of examples of the input and the desired output, and it pattern-matches. This is incredibly powerful for getting a consistent format or a specific style without any fine-tuning.
+00:01:37
+
+Then there's chain-of-thought. By asking the model to reason step by step before giving its final answer, you let it spend more computation on hard problems. For anything involving math or logic, this one change can dramatically improve accuracy.
+00:02:00
+
+Role prompting is a quieter trick that sets the domain. Telling the model it is a senior security engineer primes it to pull from that part of its knowledge and adopt the right vocabulary and level of rigor.
+00:02:23
+
+A subtle but important idea is that prompts are also your security boundary. Because the model is non-deterministic, the only way to keep it on the rails is the scaffolding around it. People will try prompt injection to make it ignore your instructions, so never fully trust user input inside a prompt.
+00:02:48
+
+Be specific, and beware of vague prompts. The quality of your output is bounded by the quality of your prompt. If you ask for something fuzzy, you get something fuzzy back, and then you blame the model when the fault was in the question.
+00:03:13
+
+The practical loop is this. Start zero-shot. If the format is wrong, add a few examples. If the reasoning is wrong, ask for steps. If the domain is off, set a role. Change one thing at a time and watch what each change does.
+00:03:37
+
+So remember: structure your prompt into system, user, and assistant, reach for zero-shot first, then few-shot, then chain-of-thought, treat the prompt as a security boundary, and above all be specific. Prompting is a skill, and it rewards deliberate practice.
+00:04:01

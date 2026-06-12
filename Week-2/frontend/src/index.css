@@ -172,3 +172,21 @@ button {
     grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
   }
 }
+
+/* ── Ingest: horizontal pipeline flow (responsive columns) ── */
+.stage-row {
+  display: grid;
+  gap: 12px;
+  margin-top: 6px;
+  align-items: stretch;        /* equal-height cards in a row */
+  grid-template-columns: 1fr;  /* stacked on narrow screens */
+}
+@media (min-width: 680px) {
+  .stage-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (min-width: 980px) {
+  .stage-row { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (min-width: 1280px) {
+  .stage-row { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+}
