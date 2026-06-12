@@ -27,3 +27,6 @@ backend/bm25_params.json
 frontend/*.tsbuildinfo
 frontend/vite.config.js
 frontend/vite.config.d.ts
+
+# Real course transcripts — keep local, don't share (only synthetic random*.txt are committed)
+Input-Data/Transcripts/week*.txt
