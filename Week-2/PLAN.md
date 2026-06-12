@@ -148,22 +148,29 @@ Timestamps are the key design asset here — transcripts have no page numbers, s
 Evaluation is the heart of the project, so we built a measurement harness early
 rather than eyeballing outputs.
 
-**The eval set.** A fixed set of 13 questions across four categories —
-single-chunk factual, multi-topic spanning, ambiguous, and **unanswerable (must
-refuse)** — each labeled with the ground-truth timestamps that actually answer
-it. A retrieval "hit" means a returned chunk whose time window contains a
-ground-truth timestamp, which keeps scoring independent of score scale.
+**The eval set.** A fixed set of 17 questions across five behavior categories —
+single-chunk factual (obvious), multi-lecture spanning, ambiguous, **borderline**
+(lightly covered / "maybe"), and **unanswerable (must refuse)** — each answerable
+one labeled with **lecture-qualified** ground-truth timestamps (e.g.
+`week2-session1 00:31:34`). A retrieval "hit" means a returned chunk *from that
+lecture* whose time window contains the timestamp; qualifying by lecture matters
+once the corpus has multiple files (a bare timestamp exists in every lecture).
+The full run lives in **`eval/REPORT.md`**.
 
 **Metrics.** hit@k and hit@3 (did the right chunk appear?), **MRR** (was it
 ranked near the top?), **refusal accuracy** (did unanswerable questions get
 refused?), and end-to-end latency.
 
-### Experiment 1 — dense baseline
-Dense retrieval was already strong on this corpus: **hit@k 100%, hit@3 100%,
-MRR 0.85**. On a clean, modest corpus the embeddings find the right chunk for
-every answerable question.
+> Our experiments ran first on a **single lecture** (Experiments 1–3, Act 1),
+> then on the full **4-lecture corpus** (Experiments 2b, 3 Act 2) — and the
+> change of corpus is itself the most instructive result.
 
-### Experiment 2 — dense vs. hybrid (an honest null result)
+### Experiment 1 — dense baseline (single lecture)
+Dense retrieval was already strong on one clean lecture: **hit@k 100%, hit@3
+100%, MRR 0.85**. On a small, clean corpus the embeddings find the right chunk
+for every answerable question.
+
+### Experiment 2 — dense vs. hybrid, single lecture (an honest null result)
 We expected hybrid to win. It didn't — at least not here:
 
 | Config | hit@k | hit@3 | MRR |
@@ -174,21 +181,79 @@ We expected hybrid to win. It didn't — at least not here:
 | Hybrid α=0.3 | 100% | 90% | 0.803 |
 
 Hybrid at α=0.7 **ties** dense; pushing *more* weight to BM25 actually **hurts**
-(keyword noise creeps into semantic questions). The honest conclusion: on a
-small, clean, single-domain corpus, dense is already saturated and hybrid gives
-no measurable lift — its payoff shows up at scale and on exact-jargon queries.
-We kept α=0.7 as cheap lexical insurance and documented the result rather than
-overselling it.
+(keyword noise creeps into semantic questions). The honest conclusion *on one
+clean lecture*: dense is already saturated and hybrid gives no measurable lift —
+its payoff should show up at scale. We kept α=0.7 as cheap lexical insurance and
+documented the null result rather than overselling it.
 
-### Experiment 3 — tuning the refusal cutoff on data
-The plan's default cutoff (0.30) was **too low**: tech-adjacent but off-topic
-questions leaked through (a Tesla-revenue question scored 0.34, a Kubernetes
-question 0.43 — both above 0.30, so both would have been answered from junk
-context). Measuring the score distribution showed a clean gap: answerable
-questions never dropped below ~0.49, unanswerable never rose above ~0.30. We set
-the cutoff to **0.40**, giving **100% correct refusal and 100% answerable
-retention**. This is the project in microcosm: *measure the distribution, then
-pick the threshold — don't guess a number.*
+### Experiment 2b — re-run at scale (the reversal)
+We later expanded to the **4-lecture corpus** and re-ran the same comparison
+(now 17 questions). The result flipped:
+
+| Config | hit@k | hit@3 | MRR |
+|---|---|---|---|
+| Dense (α=1.0) | 92% | 54% | 0.499 |
+| **Hybrid α=0.7** | **100%** | **92%** | **0.695** |
+
+Hybrid now **substantially beats** dense (hit@3 54% → 92%, MRR 0.50 → 0.70). The
+earlier null result wasn't wrong — it was *corpus-dependent*. As the corpus grew
+noisier and more lexically overlapping, the sparse BM25 signal started earning
+its keep. **The lesson: evaluate retrieval strategy on a corpus that resembles
+production, not a toy slice.**
+
+Broken down by question type (production setting, hybrid α=0.7):
+
+| Category | hit@k | hit@3 | MRR |
+|---|---|---|---|
+| single-chunk (obvious) | 100% | 80% | 0.64 |
+| multi-lecture spanning | 100% | 100% | 0.67 |
+| ambiguous | 100% | 100% | 0.78 |
+| borderline ("maybe") | 100% | 100% | 0.75 |
+| **all answerable (13)** | **100%** | **92%** | **0.70** |
+
+Retrieval found a genuinely relevant chunk for **every** answerable question —
+including the ambiguous and lightly-covered "borderline" ones. The only
+sub-top-3 case was a single-chunk question ("what is an embedding?"): embeddings
+are discussed in *four* lectures, so the specifically-labeled chunk landed at
+rank 5 among many valid ones — a labeling artifact, not a real miss.
+
+### Experiment 3 — refusal: tuning the cutoff, and finding its ceiling
+Refusal turned out to be the richest experiment, in two acts.
+
+**Act 1 — tune the cutoff on data.** The plan's default (0.30) was **too low**:
+tech-adjacent but off-topic questions leaked through (a Tesla-revenue question
+scored 0.34, a Kubernetes question 0.43 — both above 0.30, so both would have
+been answered from junk context). Measuring the score distribution showed a
+clean gap, so we set the cutoff to **0.40**. *Measure the distribution, then pick
+the threshold — don't guess a number.*
+
+**Act 2 — at scale, the cutoff hits a ceiling.** On the 4-lecture corpus a
+deliberately-planted **near-miss** exposed the limit: *"How much does the Nebius
+API cost?"* — "Nebius" is all over the corpus, but *pricing* never is. Retrieval
+returned a high-scoring Nebius chunk (**0.500**), *above* the cutoff. And the
+lowest genuine answerable score ("temperature") was **0.507** — just 0.007 away.
+**No cutoff value can refuse the near-miss without also rejecting a real
+question.** A similarity threshold simply cannot tell "close to the topic" from
+"actually contains the answer."
+
+**What saved it — a second, independent gate.** The system has *two* refusal
+mechanisms: the cheap retrieval cutoff, and the **strict grounded-generation
+prompt** ("answer only from context; otherwise say you don't know"). The
+near-miss slipped past the cutoff but the generation gate caught it — the model,
+seeing no pricing in the chunk, replied *"I couldn't find this in the lectures."*
+
+| Refusal layer | Catches | On our set |
+|---|---|---|
+| Retrieval cutoff (cheap, pre-LLM) | clearly off-topic questions | 3 / 4 |
+| Grounded generation (strict prompt) | semantically-adjacent near-misses | the 4th |
+| **End to end** | | **4 / 4 (100%)** |
+
+The takeaway: **layered ("defense-in-depth") refusal beats any single
+threshold**, and refusal should be measured *end-to-end*, not just at the
+retrieval gate. It's also the concrete, evidence-backed case for the deferred
+cross-encoder reranker (§10) — a reranker scores the (question, chunk) *pair*,
+so it would rate the Nebius-overview chunk as low-relevance to a *pricing*
+question and close the gap at the retrieval gate itself.
 
 ### A standing concern — latency
 End-to-end query latency is **~6–8s** (embed ~1–4s, hybrid retrieve ~3s,
@@ -203,8 +268,11 @@ levers are query-embedding caching, parallelism, and a faster generation model.
 **Worked well**
 - The **phased, test-gated approach** — every surprise below was cheap because
   the system was provable at each step.
-- **Refusal-first design** and **data-driven cutoff tuning** — the most
-  trustworthy parts of the system.
+- **Layered refusal** — a cheap retrieval cutoff plus a strict grounded-
+  generation gate caught 100% of unanswerable questions end-to-end, including a
+  near-miss no single threshold could (§6, Experiment 3).
+- **Measuring before tuning** — the cutoff, the α weight, and the
+  hybrid-vs-dense decision were all settled by the eval harness, not by feel.
 - **Idempotent ingest** — re-running never corrupted the index.
 - The **glass-box framing** — it improved the architecture (clean stage events)
   and became the product's differentiator.
@@ -216,8 +284,11 @@ levers are query-embedding caching, parallelism, and a faster generation model.
   offered — **Qwen3-Embedding-8B (4096-dim)** and **Llama-3.3-70B-Instruct** —
   and updated the index dimension accordingly. Lesson: confirm provider
   inventory in Phase 0, don't trust a spec sheet.
-- **Hybrid retrieval didn't beat dense** (Experiment 2). We resisted the urge to
-  force it; kept it on at a conservative weight and reported the null result.
+- **Hybrid retrieval didn't beat dense — at first** (Experiment 2). We resisted
+  forcing it, kept it at a conservative weight, and reported the null result —
+  then it paid off once we evaluated at scale (Experiment 2b). The recovery was
+  *not* changing the code; it was re-running the experiment on a realistic
+  corpus.
 - **A full network outage mid-build.** Every API call started timing out; we
   diagnosed it (DNS resolved but no route to the public internet — even GitHub
   was unreachable), confirmed it wasn't our code, and resumed once connectivity
@@ -263,20 +334,24 @@ Design decisions worth calling out:
 ## 9. Where it stands today
 
 - ✅ Working RAG end-to-end (ingest + query), dense **and** hybrid retrieval.
-- ✅ Designed, tested refusal path with a data-tuned cutoff.
-- ✅ Evaluation harness with documented dense-vs-hybrid comparison.
+- ✅ Layered refusal (cutoff + grounded generation): **100% end-to-end** on the
+  eval set, including a near-miss no single threshold could catch.
+- ✅ Evaluation harness + report (`eval/REPORT.md`): 17 questions, 5 categories,
+  per-category metrics, and the dense-vs-hybrid-at-scale result
+  (**hit@k 100%, hit@3 92%, MRR 0.70**).
 - ✅ Live glass-box web app: landing → concept tour → interactive, for both
   ingest and query, responsive across screen sizes.
-- ⏳ Phase 4 deliverables (polished eval report, Gamma deck, demo video).
+- ⏳ Remaining Phase 4 deliverables (Gamma deck, demo video).
 
 ---
 
 ## 10. Limitations and what we'd do next
 
 - **Cross-encoder reranker** — designed as a drop-in (it only re-orders the
-  retrieved chunks before generation), deferred to run on GPU (NVIDIA Brev).
-  Worth adding only if a larger corpus shows retrieval needs the precision; on
-  today's corpus dense is already saturated.
+  retrieved chunks before generation), deferred to run on GPU (NVIDIA Brev). The
+  eval now gives it a concrete job: scoring the (question, chunk) *pair* would
+  catch the q17-style near-miss at the retrieval gate (where a similarity cutoff
+  provably can't), and should sharpen ranking (MRR) on the larger corpus.
 - **Slide-deck ingestion** — the metadata schema already supports slides
   (`content_type`, `slide_number`); the loader plumbing is pending real decks.
   Slides would add clean, correctly-spelled jargon and richer citations.

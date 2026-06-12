@@ -1,82 +1,116 @@
-# Eval question set for week1-session1 (PLAN.md §10, §11).
+# Eval question set for the 4-lecture corpus (PLAN.md §6).
 #
-# ground_truth: timestamps (HH:MM:SS) that fall inside the chunk(s) which
-# actually answer the question. A retrieval "hit" = a returned chunk whose
-# [timestamp_start, timestamp_end] window contains at least one of these.
-# Unanswerable questions have answerable: false and no ground_truth — success
-# is a refusal.
+# ground_truth: "lecture_id HH:MM:SS" entries. A retrieval "hit" = a returned
+# chunk from that lecture whose [timestamp_start, timestamp_end] window contains
+# the timestamp. Lecture-qualified so a bare timestamp can't match the wrong
+# file. Unanswerable questions have answerable:false (success = a refusal).
+#
+# Categories:
+#   single_chunk  — obvious, factual, clearly in the corpus
+#   multi_topic   — spans / appears across multiple lectures
+#   ambiguous     — underspecified; a reasonable answer is expected
+#   borderline    — only lightly touched ("maybe"); tests thin-coverage robustness
+#   unanswerable  — not in the corpus; must refuse
 
+# ── single-chunk factual (obvious) ──────────────────────────────────────────
 - id: q01
   category: single_chunk
-  question: "What is a context window in an LLM?"
+  question: "What is a context window?"
   answerable: true
-  ground_truth: ["00:52:52", "00:53:02", "00:53:22", "01:12:07"]
+  ground_truth: ["week1-session1 00:52:52", "week1-session1 00:53:22", "week1-session1 01:12:07"]
 
 - id: q02
   category: single_chunk
   question: "What is temperature and what does changing it do?"
   answerable: true
-  ground_truth: ["01:02:51", "01:02:59", "01:03:50"]
+  ground_truth: ["week1-session1 01:02:51", "week1-session1 01:02:59", "week1-session1 01:03:50"]
 
 - id: q03
   category: single_chunk
-  question: "What is fine-tuning and when would you use it?"
+  question: "What is an embedding?"
   answerable: true
-  ground_truth: ["00:58:54", "00:59:34", "00:59:54"]
+  ground_truth: ["week1-session1 00:52:02", "week2-session1 00:27:26", "week2-session2 01:16:32"]
 
 - id: q04
   category: single_chunk
-  question: "What is hallucination in large language models?"
+  question: "Does the language model call tools itself, or something else?"
   answerable: true
-  ground_truth: ["00:54:52", "00:55:13", "00:55:28"]
+  ground_truth: ["week1-session2 01:29:34", "week1-session2 01:29:39", "week1-session2 01:30:14"]
 
 - id: q05
   category: single_chunk
-  question: "What context window sizes did Llama 4 Scout and Maverick have?"
+  question: "What is hallucination in large language models?"
   answerable: true
-  ground_truth: ["01:13:24", "01:13:34", "01:13:46"]
+  ground_truth: ["week1-session1 00:54:52", "week1-session1 00:55:13", "week1-session1 00:55:28"]
 
+# ── multi-lecture spanning ──────────────────────────────────────────────────
 - id: q06
   category: multi_topic
-  question: "What are the layers of the AI agent tech stack?"
+  question: "If models have large context windows, why do we still need RAG?"
   answerable: true
-  ground_truth: ["00:31:37", "00:33:43", "00:34:16", "00:34:22"]
+  ground_truth: ["week2-session1 00:22:28", "week2-session1 00:04:36", "week2-session2 00:00:51"]
 
 - id: q07
   category: multi_topic
-  question: "What are the parts of a prompt, including the system prompt?"
+  question: "What are the two core components of a RAG system?"
   answerable: true
-  ground_truth: ["00:58:10", "01:33:09", "01:33:27", "01:34:07", "01:34:30"]
+  ground_truth: ["week2-session2 02:08:00", "week2-session2 02:08:13", "week2-session2 00:34:39"]
 
 - id: q08
   category: multi_topic
-  question: "What prompting techniques were discussed?"
+  question: "What are the different levels of agent autonomy?"
   answerable: true
-  ground_truth: ["01:36:54", "01:37:19", "01:37:40"]
+  ground_truth: ["week1-session2 00:26:31", "week1-session2 00:30:14", "week2-session2 00:57:38"]
 
+# ── ambiguous / underspecified ──────────────────────────────────────────────
 - id: q09
   category: ambiguous
-  question: "How long is the course and where can I get help?"
+  question: "How do I pick the right model?"
   answerable: true
-  ground_truth: ["00:01:05", "00:01:26", "00:20:11", "02:43:58"]
+  ground_truth: ["week2-session1 00:31:34", "week2-session1 00:31:46", "week2-session1 00:32:02"]
 
 - id: q10
   category: ambiguous
-  question: "What is the transformer architecture?"
+  question: "How does chunking work?"
   answerable: true
-  ground_truth: ["00:43:38", "00:43:58", "01:07:42", "01:08:02"]
+  ground_truth: ["week2-session1 01:31:01", "week2-session1 01:31:18", "week2-session2 00:02:24", "random 00:01:25"]
 
 - id: q11
+  category: ambiguous
+  question: "What should I know about prompting?"
+  answerable: true
+  ground_truth: ["week1-session1 01:33:09", "random2 00:00:26", "random2 00:00:51"]
+
+# ── borderline ("maybe" — lightly covered) ──────────────────────────────────
+- id: q12
+  category: borderline
+  question: "What is 'lost in the middle' and how does it affect long context?"
+  answerable: true
+  ground_truth: ["week2-session2 00:15:18", "week2-session2 00:15:23", "week2-session2 00:15:31"]
+
+- id: q13
+  category: borderline
+  question: "How should I host or deploy the models?"
+  answerable: true
+  ground_truth: ["week2-session2 03:02:03", "week2-session2 03:02:10", "week1-session1 00:29:10"]
+
+# ── unanswerable (must refuse) ──────────────────────────────────────────────
+- id: q14
   category: unanswerable
   question: "What is the best recipe for authentic Neapolitan pizza dough?"
   answerable: false
 
-- id: q12
+- id: q15
   category: unanswerable
   question: "What were Tesla's quarterly revenue figures for 2024?"
   answerable: false
 
-- id: q13
+- id: q16
   category: unanswerable
   question: "How do I configure a Kubernetes ingress controller with TLS?"
+  answerable: false
+
+- id: q17
+  category: unanswerable
+  question: "How much does the Nebius Token Factory API cost per token?"
   answerable: false

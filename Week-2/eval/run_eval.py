@@ -44,14 +44,22 @@ def _load_questions() -> list[dict]:
 
 
 def _first_hit_rank(sources: list[Source], gt: list[str]) -> int | None:
-    """1-based rank of the first chunk whose window contains any ground-truth ts."""
-    gts = [_sec(t) for t in gt]
+    """1-based rank of the first retrieved chunk that matches a ground-truth entry.
+
+    Each gt entry is "lecture_id HH:MM:SS"; a match requires the chunk to be from
+    that lecture AND its [start, end] window to contain the timestamp (so a bare
+    timestamp can't match the wrong file in a multi-lecture corpus).
+    """
+    parsed = []
+    for g in gt:
+        lid, ts = g.rsplit(" ", 1)
+        parsed.append((lid, _sec(ts)))
     for i, s in enumerate(sources, start=1):
         try:
             lo, hi = _sec(s.timestamp_start), _sec(s.timestamp_end)
         except Exception:
             continue
-        if any(lo <= g <= hi for g in gts):
+        if any(s.lecture_id == lid and lo <= sec <= hi for lid, sec in parsed):
             return i
     return None
 
@@ -170,9 +178,86 @@ def compare_alphas(alphas=(1.0, 0.7, 0.5, 0.3), top_k=None, cutoff=None) -> None
     print("  *refusal at the dense-scale cutoff; refusal is retuned post-rerank in 2d.")
 
 
+def report() -> None:
+    """Full eval report: per-question + per-category at the production setting
+    (hybrid α=0.7), plus the dense-vs-hybrid overall comparison. Embeds each
+    question once and re-queries Pinecone at both alphas."""
+    s = load_settings()
+    top_k, cutoff = s.top_k, s.similarity_cutoff
+    questions = _load_questions()
+    index = ensure_index()
+    embed = get_embed_model()
+
+    cache = []
+    for q in questions:
+        t0 = time.perf_counter()
+        dense_unit = l2_normalize(embed.get_text_embedding(q["question"]))
+        embed_ms = (time.perf_counter() - t0) * 1000
+        cache.append((q, dense_unit, encode_query(q["question"]), embed_ms))
+
+    def run_alpha(a):
+        rows = []
+        for q, dense_unit, sparse_raw, embed_ms in cache:
+            dense = [a * x for x in dense_unit]
+            kw = dict(vector=dense, top_k=top_k, include_metadata=True, namespace="corpus")
+            if a < 1.0:
+                kw["sparse_vector"] = scale_sparse(sparse_raw, 1.0 - a)
+            sources = _to_sources(index.query(**kw))
+            top = sources[0].score if sources else 0.0
+            row = {"id": q["id"], "category": q["category"], "answerable": q["answerable"],
+                   "top_score": top, "embed_ms": embed_ms}
+            if q["answerable"]:
+                rank = _first_hit_rank(sources, q.get("ground_truth", []))
+                row.update(rank=rank, hit_k=rank is not None,
+                           hit_3=rank is not None and rank <= 3, rr=(1.0 / rank) if rank else 0.0)
+            else:
+                row["refused"] = top < cutoff
+            rows.append(row)
+        return rows
+
+    prod = run_alpha(s.hybrid_alpha)
+    dense = run_alpha(1.0)
+
+    print(f"\n===== PER-QUESTION (hybrid α={s.hybrid_alpha}, cutoff={cutoff}) =====")
+    print(f"{'id':<5}{'category':<14}{'score':>7}{'rank':>6}{'result':>10}")
+    for r in prod:
+        if r["answerable"]:
+            res = "hit" if r["hit_k"] else "MISS"
+            rank = str(r["rank"]) if r["rank"] else "—"
+        else:
+            res = "refuse✓" if r["refused"] else "ANSWER✗"
+            rank = "n/a"
+        print(f"{r['id']:<5}{r['category']:<14}{r['top_score']:>7.3f}{rank:>6}{res:>10}")
+
+    print("\n===== BY CATEGORY (hybrid α=%.1f) =====" % s.hybrid_alpha)
+    cats = ["single_chunk", "multi_topic", "ambiguous", "borderline", "unanswerable"]
+    print(f"{'category':<14}{'n':>3}{'hit@k':>8}{'hit@3':>8}{'MRR':>8}{'refuse':>9}")
+    for c in cats:
+        rows = [r for r in prod if r["category"] == c]
+        if not rows:
+            continue
+        ans = [r for r in rows if r["answerable"]]
+        una = [r for r in rows if not r["answerable"]]
+        hk = f"{sum(r['hit_k'] for r in ans)/len(ans):.0%}" if ans else "—"
+        h3 = f"{sum(r['hit_3'] for r in ans)/len(ans):.0%}" if ans else "—"
+        mrr = f"{sum(r['rr'] for r in ans)/len(ans):.3f}" if ans else "—"
+        ref = f"{sum(r['refused'] for r in una)/len(una):.0%}" if una else "—"
+        print(f"{c:<14}{len(rows):>3}{hk:>8}{h3:>8}{mrr:>8}{ref:>9}")
+
+    print("\n===== OVERALL: DENSE vs HYBRID =====")
+    print(f"{'config':<16}{'hit@k':>8}{'hit@3':>8}{'MRR':>8}{'refusal':>9}")
+    for label, rows in [("DENSE α=1.0", dense), (f"HYBRID α={s.hybrid_alpha}", prod)]:
+        m = _metrics(rows)
+        print(f"{label:<16}{m['hit_k']:>7.0%}{m['hit_3']:>8.0%}{m['mrr']:>8.3f}{m['refusal']:>9.0%}")
+    avg_embed = sum(e for *_, e in cache) / len(cache)
+    print(f"\n  avg query-embed latency: {avg_embed:.0f} ms")
+
+
 if __name__ == "__main__":
     import sys as _sys
-    if "--compare" in _sys.argv:
+    if "--report" in _sys.argv:
+        report()
+    elif "--compare" in _sys.argv:
         compare_alphas()
     else:
         summarize(evaluate(_retrieve, "DENSE (baseline)"))
