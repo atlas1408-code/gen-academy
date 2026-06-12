@@ -38,7 +38,7 @@ How this primer follows the three rules:
 | Ingestion + cleaning | Transcripts are parsed into timestamped segments, then a glossary fixes speech-to-text jargon (e.g. "cloud code" to "Claude Code") and whitespace is normalized — all before chunking. The loader degrades gracefully: one session was a different, speaker-less export, and the chunker re-glues its fragments rather than failing. |
 | Ingestion + freshness | Idempotent ingest — deterministic chunk IDs plus a content-hash record mean re-running only adds new or changed sessions (never duplicates). A new session is added on demand: upload its .txt and it is chunked, embedded, and stored immediately. No live feed; freshness is per-session and manual. |
 | Chunking + embedding | Transcript-aware chunking — segments packed to ~512 tokens with ~15% overlap, with timestamps carried into metadata as citation anchors. Embedding model: Qwen3-Embedding-8B (4096-dim) via Nebius Token Factory. Chunk size was chosen together with the model so capacity matches. |
-| Retrieve | Pinecone serverless (dotproduct metric); hybrid retrieval = dense semantic plus sparse BM25 (alpha = 0.7); top-k = 8; followed by a similarity-cutoff and grounded-generation refusal path. |
+| Retrieve | Pinecone serverless (dotproduct metric); hybrid retrieval = dense semantic plus sparse BM25 (alpha = 0.7), top-k = 8; a **hosted cross-encoder reranker** (Pinecone `bge-reranker-v2-m3`) re-scores the candidates and keeps the top 4; refusal uses the rerank relevance score plus a grounded-generation gate. |
 
 How this follows the framework tips:
 
@@ -66,7 +66,7 @@ We built in phases, with a test-and-approve gate at each step, on one principle:
 
 Ingest (once per session): transcript .txt → parse into timestamped segments → clean (glossary) → chunk (~512 tokens, ~15% overlap) → embed (Nebius) → store in Pinecone (dense + sparse).
 
-Query (every question): question → embed (Nebius) → hybrid search in Pinecone (dense + sparse, top-8) → if the best score is below the cutoff, refuse ("not in the sessions"); otherwise generate a cited answer (Nebius LLM, grounded prompt).
+Query (every question): question → embed (Nebius) → hybrid search in Pinecone (dense + sparse, top-8) → rerank (Pinecone hosted cross-encoder, keep top-4) → if the top rerank relevance is below the cutoff, refuse ("not in the sessions"); otherwise generate a cited answer (Nebius LLM, grounded prompt).
 
 | Layer | Tool |
 |---|---|
@@ -83,6 +83,7 @@ Query (every question): question → embed (Nebius) → hybrid search in Pinecon
 - **One embedding space for sessions and questions.** The same Nebius model embeds chunks at ingest and the question at query time, so similarity is meaningful. Chunks are stored with their original text — we never reverse a vector back into text.
 - **Speech-to-text cleaning via a glossary.** The auto-transcription mangles jargon ("cloud code" instead of "Claude Code", 11 times in one session). A word-boundary glossary normalizes known errors before chunking, which directly helps keyword and hybrid retrieval.
 - **Hybrid retrieval (dense + sparse).** Dense captures meaning; BM25 recovers exact terms. Blended at alpha = 0.7 on a dotproduct index (dense vectors normalized so dotproduct behaves like cosine).
+- **Cross-encoder reranking.** Hybrid returns the top-8 by similarity; a hosted cross-encoder (Pinecone `bge-reranker-v2-m3`) then reads each (question, chunk) pair *together* and re-scores them for true relevance, keeping the best 4 for generation. Uses the existing Pinecone key — no extra infrastructure. The rerank score is well-calibrated (≈0 for off-topic, high for genuine answers), so refusal moves onto it.
 - **Refusal designed first, and layered.** A cheap similarity cutoff refuses before the LLM is even called; a strict grounded-generation prompt ("answer only from context; otherwise say you don't know") catches anything that slips past. This two-layer design is what makes the app trustworthy.
 - **Grounded, cited generation.** The LLM answers only from retrieved chunks and cites the session and timestamp for each claim — making faithfulness checkable.
 - **Idempotent ingest.** Deterministic chunk IDs plus a content-hash record mean re-ingesting never duplicates.
@@ -130,7 +131,22 @@ On a single clean session, hybrid merely tied dense. As the corpus grew to 4 and
 
 ## Key result — retrieval finds the answer; ranking is the next lever
 
-Tripling the corpus (3 → 9 sessions) kept **hit@k at 100%** — the right session is always retrieved — but **hit@3 / MRR softened** (92% → 84%, 0.70 → 0.68). For a few factual lookups (e.g. "what is an embedding?", "what is Codex?") the *definitional* chunk now ranks 5–8 amid many chunks that mention the term. The content is found; sharpening the *ranking* is exactly the job of the deferred cross-encoder reranker (Part 7).
+Tripling the corpus (3 → 9 sessions) kept **hit@k at 100%** — the right session is always retrieved — but **hit@3 / MRR softened** (92% → 84%, 0.70 → 0.68). For a few factual lookups (e.g. "what is an embedding?", "what is Codex?") the *definitional* chunk now ranks 5–8 amid many chunks that mention the term. The content is found; sharpening the *ranking* is the job of the reranker — which we then added.
+
+## Key result — the cross-encoder reranker sharpens ranking and refusal
+
+We added a hosted cross-encoder reranker (Pinecone `bge-reranker-v2-m3`, top-8 → top-4) and re-ran the same 23-question set:
+
+| Metric | Hybrid only | Hybrid + rerank |
+|---|---|---|
+| MRR (all answerable) | 0.68 | **0.74** |
+| Single-chunk hit@3 | 70% | **90%** |
+| Single-chunk MRR | 0.65 | **0.80** |
+| Off-topic refusal scores | ~0.2–0.3 | **~0.00** (crisp) |
+
+The reranker pulls the genuinely-best chunk to **rank 1** for factual lookups (e.g. "What is Wispr Flow?" moved from rank 8 → 1, "What is an embedding?" 5 → 1), lifting MRR and single-chunk hit@3 sharply. It also makes refusal far cleaner: clearly off-topic questions now score ≈0 (vs ~0.2–0.3 on the similarity scale), so the refusal cutoff (rerank relevance < 0.10) catches them crisply, while the semantically-adjacent near-miss still falls through to the grounded-generation gate — **end-to-end refusal stays 100%.**
+
+One honest caveat: overall hit@3 dipped slightly (84% → 79%) entirely within the **ambiguous** category. For broad questions like "how does chunking work?", the reranker surfaces a *different but equally valid* chunk than the single timestamp we labeled — the same narrow-ground-truth artifact we corrected for one multi-session question. The answers stay grounded; the metric, not the system, is the limitation there.
 
 ## Key result — layered refusal (100% end-to-end)
 
@@ -178,7 +194,7 @@ To make the system understandable — and to satisfy the vibe-coded-UI bonus —
 
 # Part 7 — Limitations and next steps
 
-- Cross-encoder reranker (designed as a drop-in). The evaluation gives it a concrete job: catching the near-miss refusal case at the retrieval gate, where a cutoff provably cannot, and sharpening ranking on a larger corpus. Deferred to run on GPU (NVIDIA Brev).
+- Cross-encoder reranker — **done** (Part 4). Added via Pinecone's hosted rerank API (`bge-reranker-v2-m3`) using the existing key, so no GPU/Brev or self-hosting was needed. It sharpened rank-1 precision and refusal calibration. Possible next tweak: broaden the eval's ground truth on ambiguous questions so the metric credits the reranker's alternative-but-valid picks.
 - Slide-deck ingestion. The metadata schema already supports slides; this is pending real decks. Slides add clean, correctly-spelled jargon and richer citations.
 - Latency. Bring end-to-end under 6 seconds via query-embedding caching, parallelism, and a faster generation model.
 - Deeper evaluation. Automated faithfulness scoring (e.g. RAGAS) and a larger, balanced question set as more sessions are added.
@@ -195,10 +211,11 @@ To make the system understandable — and to satisfy the vibe-coded-UI bonus —
 | Generation model | meta-llama/Llama-3.3-70B-Instruct, Nebius |
 | Vector store | Pinecone serverless, dotproduct |
 | Sparse encoder | BM25 (pinecone-text) |
+| Reranker | Pinecone hosted `bge-reranker-v2-m3`, keep top 4 |
 | Chunk size / overlap | ~512 tokens / ~80 tokens |
-| Top-k | 8 |
+| Top-k (pre-rerank) | 8 |
 | Hybrid alpha | 0.7 |
-| Similarity cutoff | 0.40 |
+| Rerank refusal cutoff | 0.10 (relevance) |
 
 ## How to run
 

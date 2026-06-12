@@ -40,6 +40,13 @@ export function stageMeta(stage: string, st: Status | null): StageMeta {
         summary: `Hybrid dense + BM25 (α=${alpha}), top ${topk}; refuses below ${cutoff}.`,
         docs: { label: "Pinecone docs", url: PINECONE_DOCS },
       };
+    case "rerank":
+      return {
+        tool: "Pinecone · bge-reranker-v2-m3",
+        toolKind: "pinecone",
+        summary: `A cross-encoder re-scores each chunk for true relevance and keeps the best few; refusal uses this score.`,
+        docs: { label: "Pinecone rerank docs", url: "https://docs.pinecone.io/guides/inference/rerank" },
+      };
     case "generate":
       return {
         tool: `Nebius · ${llm}`,

@@ -16,6 +16,7 @@ export interface PipelineState {
     retrieved?: RetrievedChunk[];
     topScore?: number;
     cutoff?: number;
+    topRerank?: number;
     answer?: string;
     refused?: boolean;
     chunkCount?: number;
@@ -78,9 +79,10 @@ export function useStageMachine(stages: Stage[]) {
         if (d.embedding_dim) data.embeddingDim = d.embedding_dim;
         if (d.retrieved) {
           data.retrieved = d.retrieved;
-          data.topScore = d.top_score;
-          data.cutoff = d.cutoff;
+          if (d.top_score != null) data.topScore = d.top_score;
+          if (d.cutoff != null) data.cutoff = d.cutoff;
         }
+        if (d.top_rerank != null) data.topRerank = d.top_rerank;
         if (d.chunk_count != null) data.chunkCount = d.chunk_count;
         if (d.glossary_fixes != null) data.glossaryFixes = d.glossary_fixes;
         if (d.sample_chunk) data.sampleChunk = d.sample_chunk;

@@ -1,7 +1,7 @@
 // Mirrors backend/rag/events.py StepEvent (see frontend/API.md).
 export type Stage =
   | "load" | "clean" | "chunk" | "embed" | "upsert"   // ingest
-  | "retrieve" | "generate"                            // query
+  | "retrieve" | "rerank" | "generate"                 // query
   | "done" | "refuse" | "error";                       // terminal
 
 export type Status = "start" | "progress" | "complete" | "error";
@@ -24,10 +24,10 @@ export interface RetrievedChunk {
 }
 
 // Visible pipeline nodes per phase (terminal stages aren't nodes).
-export const QUERY_STAGES: Stage[] = ["embed", "retrieve", "generate"];
+export const QUERY_STAGES: Stage[] = ["embed", "retrieve", "rerank", "generate"];
 export const INGEST_STAGES: Stage[] = ["load", "clean", "chunk", "embed", "upsert"];
 
 export const STAGE_LABEL: Record<string, string> = {
   load: "load", clean: "clean", chunk: "chunk", embed: "embed", upsert: "store",
-  retrieve: "retrieve", generate: "generate",
+  retrieve: "retrieve", rerank: "rerank", generate: "generate",
 };

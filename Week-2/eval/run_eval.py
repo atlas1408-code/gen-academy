@@ -253,10 +253,44 @@ def report() -> None:
     print(f"\n  avg query-embed latency: {avg_embed:.0f} ms")
 
 
+def rerank_report() -> None:
+    """No-rerank vs hybrid+rerank: ranking metrics + refusal-gate behavior."""
+    from rag.rerank import rerank  # noqa: E402
+    s = load_settings()
+    index = ensure_index()
+    embed = get_embed_model()
+    hyb, rer = [], []
+    for q in _load_questions():
+        du = l2_normalize(embed.get_text_embedding(q["question"]))
+        sp = scale_sparse(encode_query(q["question"]), 1.0 - s.hybrid_alpha)
+        srcs = _to_sources(index.query(vector=[s.hybrid_alpha * x for x in du],
+                                       sparse_vector=sp, top_k=s.top_k,
+                                       include_metadata=True, namespace="corpus"))
+        ranked = rerank(q["question"], srcs, s.top_k)
+        for label, lst, store in [("hyb", srcs, hyb), ("rer", ranked, rer)]:
+            row = {"answerable": q["answerable"]}
+            if q["answerable"]:
+                rk = _first_hit_rank(lst, q.get("ground_truth", []))
+                row.update(hit_k=rk is not None, hit_3=rk is not None and rk <= 3,
+                           rr=(1.0 / rk) if rk else 0.0)
+            else:
+                top = (lst[0].rerank_score if label == "rer" and lst else
+                       lst[0].score if lst else 0.0)
+                row["refused"] = top < (s.rerank_cutoff if label == "rer" else s.similarity_cutoff)
+            store.append(row)
+    print(f"\n===== NO-RERANK vs RERANK (cutoff {s.rerank_cutoff}) =====")
+    print(f"{'config':<16}{'hit@k':>8}{'hit@3':>8}{'MRR':>8}{'refuse(gate)':>14}")
+    for label, rows in [("HYBRID", hyb), ("HYBRID+RERANK", rer)]:
+        m = _metrics(rows)
+        print(f"{label:<16}{m['hit_k']:>7.0%}{m['hit_3']:>8.0%}{m['mrr']:>8.3f}{m['refusal']:>13.0%}")
+
+
 if __name__ == "__main__":
     import sys as _sys
     if "--report" in _sys.argv:
         report()
+    elif "--rerank" in _sys.argv:
+        rerank_report()
     elif "--compare" in _sys.argv:
         compare_alphas()
     else:

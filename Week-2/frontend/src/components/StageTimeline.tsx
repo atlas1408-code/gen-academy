@@ -43,7 +43,10 @@ function StageData({ stage, data }: { stage: Stage; data: PipelineState["data"] 
     return <div style={mono}>[{data.embeddingPreview.slice(0, 6).map((x) => x.toFixed(3)).join(", ")}, …] · {data.embeddingDim}-dim</div>;
 
   if (stage === "retrieve" && data.topScore != null)
-    return <div style={meta}>retrieved {data.retrieved?.length ?? 0} chunks · top score <b style={{ color: "var(--accent-strong)" }}>{data.topScore}</b> · cutoff {data.cutoff}</div>;
+    return <div style={meta}>top similarity <b style={{ color: "var(--accent-strong)" }}>{data.topScore}</b></div>;
+
+  if (stage === "rerank" && data.topRerank != null)
+    return <div style={meta}>kept top {data.retrieved?.length ?? 0} · relevance <b style={{ color: "var(--accent-strong)" }}>{data.topRerank}</b></div>;
 
   if (stage === "load" && data.segmentCount != null)
     return <div style={meta}>{data.segmentCount} timestamped segments</div>;

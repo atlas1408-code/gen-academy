@@ -15,6 +15,7 @@ from .config import load_settings
 from .events import Clock, event
 from .nebius import get_embed_model, get_llm
 from .pinecone_store import ensure_index, l2_normalize
+from .rerank import rerank
 from .sparse import encode_query, scale_sparse
 
 _NAMESPACE = "corpus"
@@ -40,6 +41,7 @@ class Source:
     timestamp_end: str
     text: str
     speaker: str = ""
+    rerank_score: float = 0.0
 
 
 @dataclass
@@ -101,9 +103,11 @@ def _build_context(sources: list[Source]) -> str:
 
 def _sources_payload(sources: list[Source], n: int = 5) -> list[dict]:
     # Small payload for the hover card: a couple lines of text + useful metadata.
-    return [{"score": round(s.score, 3), "title": s.title,
-             "timestamp": s.timestamp_start, "timestamp_end": s.timestamp_end,
-             "speaker": s.speaker, "text": s.text[:240]}
+    # `score` is the cross-encoder rerank score when present, else hybrid score.
+    return [{"score": round(s.rerank_score if s.rerank_score else s.score, 3),
+             "title": s.title, "timestamp": s.timestamp_start,
+             "timestamp_end": s.timestamp_end, "speaker": s.speaker,
+             "text": s.text[:240]}
             for s in sources[:n]]
 
 
@@ -132,42 +136,51 @@ def query_stream(question: str):
     sources = _to_sources(res)
     top_score = sources[0].score if sources else 0.0
     yield event("retrieve", "complete",
-                f"Retrieved {len(sources)} chunks (top score {top_score:.3f})", clock,
-                retrieved=_sources_payload(sources), top_score=round(top_score, 3),
-                cutoff=s.similarity_cutoff)
+                f"Retrieved {len(sources)} chunks (top similarity {top_score:.3f})", clock,
+                retrieved=_sources_payload(sources), top_score=round(top_score, 3))
 
-    # Refusal path: nothing cleared the similarity cutoff (§8.4).
-    if not sources or top_score < s.similarity_cutoff:
+    # Rerank: cross-encoder re-scores the candidates; refusal moves onto this
+    # well-calibrated score (§10).
+    yield event("rerank", "start",
+                f"Reranking {len(sources)} chunks via Pinecone ({s.rerank_model})…", clock)
+    ranked = rerank(question, sources, s.rerank_top_n)
+    top_rr = ranked[0].rerank_score if ranked else 0.0
+    yield event("rerank", "complete",
+                f"Kept top {len(ranked)} (relevance {top_rr:.3f})", clock,
+                retrieved=_sources_payload(ranked), top_rerank=round(top_rr, 3),
+                rerank_cutoff=s.rerank_cutoff)
+
+    # Refusal path: nothing cleared the rerank-relevance cutoff.
+    if not ranked or top_rr < s.rerank_cutoff:
         msg = "I couldn't find this in the lectures."
         yield event("refuse", "complete",
-                    f"Top score {top_score:.3f} < cutoff {s.similarity_cutoff} — refusing",
-                    clock, refused=True, answer=msg, top_score=round(top_score, 3),
-                    sources=_sources_payload(sources))
+                    f"Top relevance {top_rr:.3f} < cutoff {s.rerank_cutoff} — refusing",
+                    clock, refused=True, answer=msg, top_score=round(top_rr, 3),
+                    sources=_sources_payload(ranked))
         return
 
     yield event("generate", "start", f"Generating cited answer via Nebius "
                 f"({s.nebius_llm_model})…", clock)
-    context = _build_context(sources)
-    prompt = (f"{_SYSTEM}\n\n=== CONTEXT ===\n{context}\n\n"
+    prompt = (f"{_SYSTEM}\n\n=== CONTEXT ===\n{_build_context(ranked)}\n\n"
               f"=== QUESTION ===\n{question}\n\n=== ANSWER ===")
     answer = str(get_llm().complete(prompt)).strip()
     yield event("generate", "complete", "Answer generated", clock)
 
     yield event("done", "complete", "Done", clock, refused=False, answer=answer,
-                top_score=round(top_score, 3), sources=_sources_payload(sources))
+                top_score=round(top_rr, 3), sources=_sources_payload(ranked))
 
 
 def answer_question(question: str) -> Answer:
-    """Non-streaming path for the CLI (single embed; full Source objects)."""
+    """Non-streaming path for the CLI: hybrid retrieve → rerank → refuse/generate."""
     s = load_settings()
-    sources = _retrieve_hybrid(question, s.top_k)
-    top_score = sources[0].score if sources else 0.0
+    ranked = rerank(question, _retrieve_hybrid(question, s.top_k), s.rerank_top_n)
+    top_rr = ranked[0].rerank_score if ranked else 0.0
 
-    if not sources or top_score < s.similarity_cutoff:
+    if not ranked or top_rr < s.rerank_cutoff:
         return Answer(refused=True, answer="I couldn't find this in the lectures.",
-                      top_score=top_score, sources=sources)
+                      top_score=top_rr, sources=ranked)
 
-    prompt = (f"{_SYSTEM}\n\n=== CONTEXT ===\n{_build_context(sources)}\n\n"
+    prompt = (f"{_SYSTEM}\n\n=== CONTEXT ===\n{_build_context(ranked)}\n\n"
               f"=== QUESTION ===\n{question}\n\n=== ANSWER ===")
     answer = str(get_llm().complete(prompt)).strip()
-    return Answer(refused=False, answer=answer, top_score=top_score, sources=sources)
+    return Answer(refused=False, answer=answer, top_score=top_rr, sources=ranked)

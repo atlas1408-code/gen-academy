@@ -56,6 +56,8 @@ class Settings:
     chunk_overlap: int
     top_k: int
     rerank_top_n: int
+    rerank_model: str
+    rerank_cutoff: float
     similarity_cutoff: float
     hybrid_alpha: float
 
@@ -78,6 +80,8 @@ def load_settings() -> Settings:
         chunk_overlap=int(_get("CHUNK_OVERLAP", "80")),
         top_k=int(_get("TOP_K", "8")),
         rerank_top_n=int(_get("RERANK_TOP_N", "4")),
+        rerank_model=_get("RERANK_MODEL", "bge-reranker-v2-m3"),
+        rerank_cutoff=float(_get("RERANK_CUTOFF", "0.10")),
         similarity_cutoff=float(_get("SIMILARITY_CUTOFF", "0.40")),
         hybrid_alpha=float(_get("HYBRID_ALPHA", "0.7")),
     )

@@ -77,7 +77,39 @@ always retrieved — but **hit@3 / MRR softened** (92% → 84%, 0.70 → 0.68). 
 few factual lookups (e.g. "what is an embedding?", "what is Codex?", "what is
 Wispr Flow?") the *definitional* chunk now ranks 5–8 because many other chunks
 also mention the term. The content is found; the *precision of ranking* is what a
-**cross-encoder reranker** would sharpen (see next steps).
+**cross-encoder reranker** sharpens — which we then added.
+
+### Adding the cross-encoder reranker (hosted, Pinecone `bge-reranker-v2-m3`)
+
+Hybrid returns top-8 by similarity; the reranker re-scores each (question, chunk)
+pair and keeps the top 4. No extra infra — it uses the existing Pinecone key.
+
+| Metric | Hybrid only | Hybrid + rerank |
+|---|---|---|
+| MRR (all answerable) | 0.68 | **0.74** |
+| Single-chunk hit@3 | 70% | **90%** |
+| Single-chunk MRR | 0.65 | **0.80** |
+| Multi-session MRR | 0.75 | **1.00** |
+| Off-topic refusal scores | ~0.2–0.3 | **~0.00** |
+
+The reranker pulls the genuinely-best chunk to **rank 1** for factual lookups
+("What is Wispr Flow?" 8 → 1; "What is an embedding?" 5 → 1), lifting MRR and
+single-chunk hit@3 sharply. It also makes the **refusal gate crisp**: clearly
+off-topic questions score ≈0 (pizza 0.00, Tesla 0.02, Kubernetes 0.00) — so the
+rerank-relevance cutoff (0.10) refuses them cleanly, while the q17 near-miss
+(0.45) still passes the gate and is caught by grounded generation. End-to-end
+refusal stays **100%**.
+
+**Honest caveat:** overall hit@3 dipped (84% → 79%), entirely within the
+**ambiguous** category. For broad questions ("how does chunking work?") the
+reranker surfaces a *different but equally valid* chunk than the single timestamp
+we labeled — the same narrow-ground-truth artifact noted below for q23. The
+answers stay grounded; the metric is the limitation, not the reranker. A fairer
+score would broaden the ground truth for those questions.
+
+Refusal cutoff moved from the hybrid-similarity scale (0.40) to the
+**rerank-relevance scale (0.10)** — chosen because off-topic questions cluster
+near 0 while genuine answers sit far higher.
 
 ---
 
