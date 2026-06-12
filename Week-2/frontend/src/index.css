@@ -108,3 +108,67 @@ body {
 button {
   font-family: inherit;
 }
+
+/* ── Query workspace: pipeline docks left, results fill the right ── */
+:root {
+  --fs-answer: 14px;   /* answer body */
+  --fs-read: 12px;     /* source text + stage summaries */
+}
+@media (min-width: 1500px) {
+  :root {
+    --fs-answer: 15.5px;
+    --fs-read: 13px;
+  }
+}
+
+.workspace {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 18px;
+}
+.pipeline-col {
+  min-width: 0;
+  max-width: 760px;   /* keep the timeline readable while centered */
+  margin: 0 auto;
+  width: 100%;
+}
+.results-col {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);   /* answer over sources by default */
+  gap: 14px;
+  align-items: start;
+  animation: lg-up 0.5s ease;
+}
+
+/* ≥1024: dock pipeline left, results fill the rest.
+   Grid with minmax(0,1fr) guarantees the results track shrinks to fit
+   instead of overflowing the viewport. */
+@media (min-width: 1024px) {
+  .workspace.has-results {
+    display: grid;
+    grid-template-columns: 320px minmax(0, 1fr);
+    gap: 20px;
+    align-items: start;
+  }
+  .workspace.has-results .pipeline-col {
+    max-width: none;
+    margin: 0;
+  }
+  /* Cap each column to the viewport so the columns scroll internally
+     instead of growing the whole page. */
+  .workspace.has-results .pipeline-col,
+  .workspace.has-results .results-col {
+    max-height: calc(100vh - 250px);
+    overflow-y: auto;
+    padding-right: 4px;
+  }
+}
+
+/* ≥1320: enough room for answer and sources side by side on the right */
+@media (min-width: 1320px) {
+  .workspace.has-results .results-col {
+    grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+  }
+}

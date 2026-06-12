@@ -19,17 +19,14 @@ export function QueryView() {
   const { start } = useSSE();
   const status = useStatus();
   const { state, feed, reset } = useStageMachine(QUERY_STAGES);
-  const [timelineOpen, setTimelineOpen] = useState(true);
   const [highlight, setHighlight] = useState<number | null>(null);
   const running = state.terminal === "running";
-  const done = state.terminal === "done" || state.terminal === "refused";
   const { data } = state;
 
   const run = (question = q) => {
     if (!question.trim() || running) return;
     setQ(question);
     setHighlight(null);
-    setTimelineOpen(true);
     reset();
     start(`/query?q=${encodeURIComponent(question.trim())}`, feed, () =>
       feed({ stage: "error", status: "error", message: "Connection lost — is the backend running?", elapsed_ms: 0, data: {} })
@@ -66,40 +63,32 @@ export function QueryView() {
         ))}
       </div>
 
-      {/* pipeline timeline — collapses to a slim bar once the run finishes */}
+      {/* workspace: pipeline is centered while querying, then docks left and
+          the results region (answer + sources) fills the right. */}
       {state.terminal !== "idle" && (
-        <div style={{ marginTop: 18 }}>
-          <StageTimeline
-            stages={QUERY_STAGES}
-            state={state}
-            status={status}
-            collapsed={done && !timelineOpen}
-            onToggleCollapse={done ? () => setTimelineOpen((o) => !o) : undefined}
-          />
-        </div>
-      )}
+        <div className={`workspace${data.retrieved ? " has-results" : ""}`}>
+          <div className="pipeline-col">
+            <StageTimeline stages={QUERY_STAGES} state={state} status={status} />
+          </div>
 
-      {/* results: two-pane (answer leads, sources beside) */}
-      {data.retrieved && (
-        <div style={{ display: "flex", gap: 16, flexWrap: "wrap", marginTop: 16, alignItems: "flex-start" }}>
-          <div style={{ flex: "1 1 420px", minWidth: 300 }}>
-            {data.answer ? (
-              <AnswerCard text={data.answer} chunks={data.retrieved} refused={state.terminal === "refused"} onCite={setHighlight} />
-            ) : (
-              <div className="glass" style={{ borderRadius: 14, padding: "16px 18px", fontSize: 13, color: "var(--ink-mute)" }}>
-                Composing a cited answer…
-              </div>
-            )}
-          </div>
-          <div style={{ flex: "0 1 340px", minWidth: 280 }}>
-            <SourcesPanel
-              chunks={data.retrieved}
-              topScore={data.topScore}
-              cutoff={data.cutoff}
-              highlight={highlight}
-              onSelect={setHighlight}
-            />
-          </div>
+          {data.retrieved && (
+            <div className="results-col">
+              {data.answer ? (
+                <AnswerCard text={data.answer} chunks={data.retrieved} refused={state.terminal === "refused"} onCite={setHighlight} />
+              ) : (
+                <div className="glass" style={{ borderRadius: 14, padding: "16px 18px", fontSize: "var(--fs-answer)", color: "var(--ink-mute)" }}>
+                  Composing a cited answer…
+                </div>
+              )}
+              <SourcesPanel
+                chunks={data.retrieved}
+                topScore={data.topScore}
+                cutoff={data.cutoff}
+                highlight={highlight}
+                onSelect={setHighlight}
+              />
+            </div>
+          )}
         </div>
       )}
 

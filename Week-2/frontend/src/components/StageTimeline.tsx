@@ -130,12 +130,12 @@ export function StageTimeline({
         const active = node === "active" || node === "progress";
         const tc = TOOL_COLOR[meta.toolKind];
         return (
-          <div key={s} style={{ position: "relative", display: "flex", gap: 12, marginBottom: 16 }}>
+          <div key={s} style={{ position: "relative", display: "flex", gap: 11, marginBottom: 11 }}>
             <Dot node={node} />
             <div
               className="glass"
               style={{
-                flex: 1, padding: "13px 15px", borderRadius: 13,
+                flex: 1, minWidth: 0, padding: "10px 13px", borderRadius: 12,
                 opacity: node === "pending" ? 0.62 : 1,
                 border: active ? "1px solid rgba(47,107,255,.45)" : undefined,
                 transition: "opacity .35s, border-color .35s",
@@ -155,20 +155,20 @@ export function StageTimeline({
                 )}
               </div>
 
-              <div style={{ fontSize: 12.5, color: "var(--ink-soft)", lineHeight: 1.55, marginTop: 6 }}>
+              <div style={{ fontSize: "var(--fs-read)", color: "var(--ink-soft)", lineHeight: 1.5, marginTop: 5 }}>
                 {meta.summary}
               </div>
 
               <StageData stage={s} data={state.data} />
 
-              {active && <div className="shim" style={{ marginTop: 9 }} />}
+              {active && <div className="shim" style={{ marginTop: 8 }} />}
 
               {meta.docs && (
                 <a
                   href={meta.docs.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  style={{ display: "inline-flex", alignItems: "center", gap: 4, marginTop: 9, fontSize: 11.5, color: "var(--accent)", textDecoration: "none" }}
+                  style={{ display: "inline-flex", alignItems: "center", gap: 4, marginTop: 7, fontSize: 11.5, color: "var(--accent)", textDecoration: "none" }}
                 >
                   <IconExternalLink size={12} /> {meta.docs.label}
                 </a>

@@ -36,7 +36,7 @@ function SourceRow({
         {c.title} · {c.timestamp}{c.speaker ? ` · ${c.speaker}` : ""}
       </div>
       <div style={{
-        fontSize: 11.5, color: "var(--ink-soft)", marginTop: 4, lineHeight: 1.5,
+        fontSize: "var(--fs-read)", color: "var(--ink-soft)", marginTop: 4, lineHeight: 1.5,
         display: "-webkit-box", WebkitLineClamp: open ? 99 : 2, WebkitBoxOrient: "vertical", overflow: "hidden",
       }}>
         {c.text}
@@ -55,7 +55,7 @@ export function SourcesPanel({
   onSelect: (i: number | null) => void;
 }) {
   return (
-    <div className="glass" style={{ borderRadius: 13, padding: 12, maxHeight: 560, overflowY: "auto" }}>
+    <div className="glass" style={{ borderRadius: 13, padding: 12, minWidth: 0 }}>
       <div style={{ fontSize: 11, color: "var(--ink-mute)", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8, display: "flex", justifyContent: "space-between" }}>
         <span>Sources · {chunks.length}</span>
         {topScore != null && <span>top {topScore} · cutoff {cutoff}</span>}

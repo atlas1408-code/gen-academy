@@ -20,10 +20,10 @@ export function AnswerCard({
     <div
       className="glass"
       style={{
-        borderRadius: 14, padding: "16px 18px", fontSize: 14, lineHeight: 1.7,
+        borderRadius: 14, padding: "16px 18px", fontSize: "var(--fs-answer)", lineHeight: 1.7,
         color: refused ? "#9a3b3b" : "var(--ink)",
         borderLeft: `3px solid ${refused ? "#cf8a8a" : "var(--accent)"}`,
-        animation: "lg-up .45s ease",
+        minWidth: 0, overflowWrap: "anywhere", animation: "lg-up .45s ease",
       }}
     >
       <div style={{ fontSize: 11, color: "var(--ink-mute)", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>

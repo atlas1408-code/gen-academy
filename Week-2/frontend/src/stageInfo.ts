@@ -23,51 +23,53 @@ export function stageMeta(stage: string, st: Status | null): StageMeta {
   const cutoff = st?.retrieval.similarity_cutoff ?? 0.4;
   const metric = st?.index.metric ?? "dotproduct";
 
+  // Summaries are intentionally terse here (the Concept Tour carries the full
+  // explanation) so the timeline cards stay compact and scannable.
   switch (stage) {
     case "embed":
       return {
-        tool: `Nebius Token Factory · ${embModel}`,
+        tool: `Nebius · ${embModel}`,
         toolKind: "nebius",
-        summary: `The text becomes a ${dim}-dimension vector capturing its meaning — the same embedding model is used for documents and questions, so they share one space.`,
-        docs: { label: "Nebius embeddings docs", url: NEBIUS_EMBED_DOCS },
+        summary: `Text → a ${dim}-dim vector (same model as the documents).`,
+        docs: { label: "Nebius docs", url: NEBIUS_EMBED_DOCS },
       };
     case "retrieve":
       return {
         tool: `Pinecone · ${metric}`,
         toolKind: "pinecone",
-        summary: `Hybrid search blends dense semantic similarity with sparse BM25 keywords (α=${alpha}) and returns the top ${topk}. If the best score is below ${cutoff}, the system refuses instead of guessing.`,
+        summary: `Hybrid dense + BM25 (α=${alpha}), top ${topk}; refuses below ${cutoff}.`,
         docs: { label: "Pinecone docs", url: PINECONE_DOCS },
       };
     case "generate":
       return {
-        tool: `Nebius Token Factory · ${llm}`,
+        tool: `Nebius · ${llm}`,
         toolKind: "nebius",
-        summary: `The language model writes the answer using only the retrieved chunks, citing the lecture and timestamp for every claim.`,
+        summary: `Answers only from the retrieved chunks, with citations.`,
         docs: { label: "Nebius docs", url: NEBIUS_DOCS },
       };
     case "load":
       return {
         tool: "local parser",
         toolKind: "local",
-        summary: `The transcript is parsed into timestamped speech segments — each passage paired with when it was said.`,
+        summary: `Parsed into timestamped speech segments.`,
       };
     case "clean":
       return {
         tool: "local glossary",
         toolKind: "local",
-        summary: `Speech-to-text jargon is normalized before chunking (e.g. “cloud code” → “Claude Code”) so search matches the right terms.`,
+        summary: `Fixes ASR jargon (e.g. “cloud code” → “Claude Code”).`,
       };
     case "chunk":
       return {
         tool: "tiktoken",
         toolKind: "local",
-        summary: `Segments are grouped into ~512-token chunks with overlap — big enough to hold a complete thought, small enough to stay precise. Timestamps are preserved as citation anchors.`,
+        summary: `~512-token chunks with overlap; timestamps preserved.`,
       };
     case "upsert":
       return {
         tool: `Pinecone · ${metric}`,
         toolKind: "pinecone",
-        summary: `Each chunk's dense + sparse vectors, original text, and metadata are stored with a deterministic ID — so re-ingesting the same file overwrites rather than duplicates.`,
+        summary: `Dense + sparse + text stored; deterministic IDs (idempotent).`,
         docs: { label: "Pinecone docs", url: PINECONE_DOCS },
       };
     default:
