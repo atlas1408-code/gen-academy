@@ -26,8 +26,12 @@ export default function App() {
   const home = () => { setScreen("landing"); setPhase(null); };
   const phaseLabel = phase === "query" ? "Query" : "Ingest";
 
+  // Interactive screens get more room for the two-pane results; landing/tour
+  // stay a comfortable reading width.
+  const maxWidth = screen === "interactive" ? 980 : 820;
+
   return (
-    <div style={{ minHeight: "100%", maxWidth: 820, margin: "0 auto", padding: "26px 22px 60px" }}>
+    <div style={{ minHeight: "100%", maxWidth, margin: "0 auto", padding: "26px 22px 60px", transition: "max-width .3s" }}>
       {/* header / breadcrumb */}
       <header style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 26 }}>
         <button onClick={home}

@@ -8,6 +8,7 @@ export interface PipelineState {
   nodes: Record<string, NodeState>;
   loaderText: string | null;
   startedAt: number | null; // for the elapsed-time display on slow stages
+  elapsedMs: number; // cumulative ms from request start (latest event)
   terminal: Terminal;
   data: {
     embeddingPreview?: number[];
@@ -27,9 +28,10 @@ export interface PipelineState {
 }
 
 // Minimum time a stage stays visibly "active" so fast stages (load=2ms,
-// clean=39ms) don't flash. Slow stages (embed, retrieve, upsert) overrun this
-// naturally, so no artificial delay is added to them.
-const MIN_MS = 1100;
+// clean=39ms) don't flash — bumped to give the per-stage education cards a
+// readable, deliberate reveal. Slow stages (embed, retrieve, upsert) overrun
+// this naturally, so no artificial delay is added to them.
+const MIN_MS = 1600;
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 /**
@@ -43,6 +45,7 @@ export function useStageMachine(stages: Stage[]) {
       nodes: Object.fromEntries(stages.map((s) => [s, "pending"])) as Record<string, NodeState>,
       loaderText: null,
       startedAt: null,
+      elapsedMs: 0,
       terminal: "idle",
       data: {},
     }),
@@ -67,6 +70,7 @@ export function useStageMachine(stages: Stage[]) {
         const nodes = { ...prev.nodes };
         const data = { ...prev.data };
         let { loaderText, startedAt, terminal } = prev;
+        const elapsedMs = ev.elapsed_ms || prev.elapsedMs;
         const d = ev.data || {};
 
         // Capture stage-specific data for the side panel.
@@ -121,7 +125,7 @@ export function useStageMachine(stages: Stage[]) {
             startedAt = null;
           }
         }
-        return { nodes, data, loaderText, startedAt, terminal };
+        return { nodes, data, loaderText, startedAt, elapsedMs, terminal };
       });
     },
     [stages]

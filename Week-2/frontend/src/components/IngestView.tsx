@@ -2,8 +2,8 @@ import { useRef, useState } from "react";
 import { IconUpload, IconFileText, IconLoader2, IconCircleCheck } from "@tabler/icons-react";
 import { useSSE } from "../lib/useSSE";
 import { useStageMachine } from "../lib/useStageMachine";
-import { PipelineRail } from "./PipelineRail";
-import { Loader } from "./Loader";
+import { useStatus } from "../lib/useStatus";
+import { StageTimeline } from "./StageTimeline";
 import { INGEST_STAGES } from "../types";
 
 export function IngestView() {
@@ -11,6 +11,7 @@ export function IngestView() {
   const [uploadErr, setUploadErr] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const { start } = useSSE();
+  const status = useStatus();
   const { state, feed, reset } = useStageMachine(INGEST_STAGES);
   const running = state.terminal === "running";
   const { data } = state;
@@ -35,9 +36,6 @@ export function IngestView() {
       setUploadErr("Upload failed — is the backend running?");
     }
   };
-
-  const inUpsert = state.nodes.upsert === "active" || state.nodes.upsert === "progress";
-  const progress = inUpsert && data.upsertTotal ? { done: data.upsertDone ?? 0, total: data.upsertTotal } : undefined;
 
   return (
     <div>
@@ -68,30 +66,13 @@ export function IngestView() {
         Upload any lecture transcript as a <b>.txt</b> file. Files already ingested are skipped automatically. (Slide decks coming soon.)
       </p>
 
-      <div style={{ marginTop: 12 }}>
-        <PipelineRail stages={INGEST_STAGES} nodes={state.nodes} />
+      {/* pipeline timeline */}
+      <div style={{ marginTop: 16 }}>
+        <StageTimeline stages={INGEST_STAGES} state={state} status={status} />
       </div>
 
-      {state.loaderText && (
-        <div style={{ marginTop: 14 }}>
-          <Loader text={state.loaderText} since={state.startedAt} progress={progress} />
-        </div>
-      )}
-
-      {data.sampleChunk && (
-        <div className="glass" style={{ marginTop: 12, padding: "10px 13px", borderRadius: 11 }}>
-          <div style={{ fontSize: 11, color: "var(--ink-mute)", marginBottom: 4 }}>
-            sample chunk{data.chunkCount ? ` · 1 of ${data.chunkCount}` : ""}
-            {data.glossaryFixes != null ? ` · ${data.glossaryFixes} jargon fixes` : ""}
-          </div>
-          <div style={{ fontSize: 12, color: "var(--ink-soft)", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
-            {data.sampleChunk}
-          </div>
-        </div>
-      )}
-
       {state.terminal === "done" && (
-        <div className="glass" style={{ marginTop: 14, padding: "13px 15px", borderRadius: 13, display: "flex", alignItems: "center", gap: 10, animation: "lg-up .45s ease" }}>
+        <div className="glass" style={{ marginTop: 6, padding: "13px 15px", borderRadius: 13, display: "flex", alignItems: "center", gap: 10, animation: "lg-up .45s ease" }}>
           <IconCircleCheck size={20} color="#0f8268" />
           <div style={{ fontSize: 13, color: "var(--ink)" }}>
             Ingested <b>{file?.name}</b>
