@@ -1,0 +1,44 @@
+# Eval set: the 3 seeded PRs in eval-target-repo, with their expected findings.
+# An expected finding is "caught" if any produced finding on the same file
+# contains one of its keywords (case-insensitive). Ground truth: SEEDED_BUGS.md.
+
+prs:
+  - name: security-sql-injection
+    url: https://github.com/atlas1408-code/eval-target-repo/pull/1
+    expected:
+      - id: S1-sql-injection
+        agent: security
+        path: app/search.py
+        keywords: ["sql injection", "parameteri", "interpolat", "f-string", "injection"]
+      - id: S2-hardcoded-secret
+        agent: security
+        path: app/search.py
+        keywords: ["hardcoded", "secret", "credential", "api token", "api key", "token"]
+
+  - name: quality-refactor
+    url: https://github.com/atlas1408-code/eval-target-repo/pull/2
+    expected:
+      - id: Q1-mutable-default
+        agent: quality
+        path: app/digest.py
+        keywords: ["mutable default", "default argument", "tags=[]", "shared", "mutable"]
+      - id: Q2-duplicated-logic
+        agent: quality
+        path: app/digest.py
+        keywords: ["duplicat", "repeated", "copy-paste", "extract a helper", "redundan"]
+      - id: Q3-dead-code
+        agent: quality
+        path: app/digest.py
+        keywords: ["dead code", "unreachable", "after return", "never executed"]
+      - id: Q4-bare-except
+        agent: quality
+        path: app/digest.py
+        keywords: ["bare except", "except:", "broad except", "catch-all", "swallow"]
+
+  - name: test-gap
+    url: https://github.com/atlas1408-code/eval-target-repo/pull/3
+    expected:
+      - id: T1-missing-test
+        agent: test_gap
+        path: app/stats.py
+        keywords: ["test", "coverage", "untested", "no test"]

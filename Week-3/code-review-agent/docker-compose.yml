@@ -1,0 +1,20 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: cra_postgres
+    environment:
+      POSTGRES_USER: cra
+      POSTGRES_PASSWORD: cra
+      POSTGRES_DB: code_review
+    ports:
+      - "5433:5432"          # host 5433 -> container 5432 (avoid clashing with a local pg)
+    volumes:
+      - cra_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cra -d code_review"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  cra_pgdata:

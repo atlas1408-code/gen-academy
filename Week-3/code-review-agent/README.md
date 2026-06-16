@@ -1,0 +1,138 @@
+# Code Review Agent
+
+An agentic system that reviews a GitHub pull request. It fetches the PR diff,
+builds diff-scoped code context with tree-sitter, runs **three specialist agents
+in parallel** (code quality, security, test gaps) on Nebius Token Factory,
+consolidates and severity-ranks their findings, **pauses for human approval**,
+and only then posts inline review comments to GitHub.
+
+The browser shows the three agents working **live** (one column each), then the
+ranked findings as structured cards you can approve, reject per-finding, or
+refine before anything is posted.
+
+## Design rules
+
+1. **Reads are autonomous; the one write (posting a comment) is gated behind human approval.**
+2. **State is durable** — a paused or crashed run resumes via a LangGraph Postgres checkpointer.
+3. **No all-or-nothing failure** — if one agent fails it's marked *degraded* and the others still produce a review.
+4. **Every model call goes through Nebius Token Factory** (`ChatNebius`, `temperature=0`).
+
+## Stack
+
+Python 3.11+ · LangGraph + LangChain · `langchain-nebius` · Postgres
+(`PostgresSaver` checkpointer + app tables) · FastAPI + a single static HTML page
+· tree-sitter (`tree-sitter` + `tree-sitter-python`). No vector DB, no Redis.
+
+## How it works
+
+```
+                 ┌─ quality ─┐
+START → fetch_pr → build_context →┤  security  ├→ consolidate → human_gate ─approve→ post_comments → END
+                 └─ test_gap ─┘                      │  ▲                  ─reject──────────────────→ END
+                                                     └──┘ refine (regenerate suggestion, loop back)
+```
+
+- **fetch_pr** — parse the PR URL, fetch metadata + raw diff (REST), parse the diff into per-file hunks; retries 5xx/rate-limits, raises a clean error on 404/bad URL.
+- **build_context** — for each changed file, tree-sitter extracts the enclosing function/class, imports, and the conventional matching test path.
+- **quality / security / test_gap** — run in parallel; each calls its model through a JSON-repair helper and either appends findings or marks itself *degraded* (never crashes).
+- **consolidate** — validates each finding's `in_hunk` against the hunks, dedupes by `(path, line, side)`, applies any refinements, severity-ranks, and persists.
+- **human_gate** — `interrupt()`s for approval; resumes with approve / reject / refine.
+- **post_comments** — only on approve: inline comment if in a hunk, else a general PR comment; idempotent via a `(head_sha, path, line, side)` ledger.
+
+Each finding is structured: `severity · title · problem · suggestion · location (path:line + symbol)`.
+
+## Setup
+
+```bash
+cd code-review-agent
+python3.12 -m venv .venv
+.venv/bin/pip install -r requirements.txt
+cp .env.example .env        # then fill in the values below
+docker compose up -d        # Postgres on host port 5433
+```
+
+### Environment variables (`.env`)
+
+| Var | Needed for | Notes |
+|---|---|---|
+| `DATABASE_URL` | always | defaults to the docker-compose Postgres (`localhost:5433`) |
+| `NEBIUS_API_KEY` | the agents | Nebius Token Factory key |
+| `NEBIUS_BASE_URL` | the agents | `https://api.tokenfactory.nebius.com/v1/` |
+| `MODEL_QUALITY / MODEL_SECURITY / MODEL_TEST_GAP / MODEL_CONSOLIDATE` | the agents | verify against `/v1/models` for your account |
+| `GITHUB_TOKEN` | posting comments | PAT (classic `repo`, or fine-grained with PR read/write) for the repo you review. Reads work unauthenticated. |
+| `LANGCHAIN_TRACING_V2` / `LANGCHAIN_API_KEY` / `LANGCHAIN_PROJECT` | optional | turns on LangSmith tracing |
+
+## 60-second run-through
+
+```bash
+# 1. start Postgres + the server
+docker compose up -d
+PYTHONPATH=. .venv/bin/uvicorn app.api.server:app --reload
+
+# 2. open the UI
+open http://127.0.0.1:8000
+```
+
+In the browser: paste a PR URL → **Review**. Watch the three agent columns go
+**running → done** live, then read the ranked finding cards. Reject any you don't
+want, **Refine** a suggestion if needed, then **Approve & post** — comments are
+posted to the PR (inline where the line is in the diff, general otherwise).
+Re-approving the same run posts **zero** duplicates.
+
+> Heads-up: **Approve posts real comments** to the live PR. Use a throwaway/test PR.
+
+### API (driven by the UI, usable directly)
+
+| Endpoint | Purpose |
+|---|---|
+| `GET /` | the single-page UI |
+| `GET /review/stream?pr_url=…` | SSE: live per-agent progress, then final findings |
+| `POST /review {pr_url}` | blocking variant: run to the interrupt, return findings |
+| `GET /run/{run_id}` | current findings + status |
+| `POST /run/{run_id}/decision {action, rejected, refine}` | resume: `approve` \| `reject` \| `refine` |
+
+## Tests
+
+```bash
+PYTHONPATH=. .venv/bin/python -m pytest -q
+```
+Covers hunk mapping, JSON repair/degrade, GitHub retry/backoff, and partial
+failure (one agent down → run still completes). Hermetic — no network or DB.
+
+## Evals & cost
+
+```bash
+PYTHONPATH=. .venv/bin/python -m evals.run_eval        # hit-rate vs evals/prs.yaml -> evals/last_report.md
+PYTHONPATH=. .venv/bin/python -m evals.cost_summary    # per-agent / per-run tokens + est. $
+```
+`evals/prs.yaml` lists the seeded PRs and their expected findings (ground truth
+in the companion `eval-target-repo`). `run_eval` is read-only — it never posts.
+Edit the `PRICES` map in `cost_summary.py` to match your Nebius plan.
+
+## Layout
+
+```
+app/
+  config.py            env + model ids
+  state.py             ReviewState + Finding + Hunk
+  models.py            ChatNebius per agent (temperature=0)
+  graph.py             build_graph() + Postgres checkpointer
+  format.py            compose_comment() — structured fields -> markdown
+  progress.py          emit() -> LangGraph custom stream (live UI events)
+  nodes/               fetch_pr, build_context, agents, consolidate, human_gate, post_comments
+  tools/               github (diff/hunks/posting), treesitter_ctx, json_repair
+  db/                  schema.sql, repo.py (runs/findings/approvals/token_usage/posted_comments)
+  api/                 server.py (FastAPI) + static/index.html
+evals/   prs.yaml, run_eval.py, cost_summary.py
+scripts/ durability_demo.py + per-phase acceptance checks
+tests/   pytest suite
+```
+
+## Durability demo
+
+```bash
+PYTHONPATH=. .venv/bin/python -m scripts.durability_demo start  pr-1-run
+# process exits at the interrupt; resume from a fresh process:
+PYTHONPATH=. .venv/bin/python -m scripts.durability_demo resume pr-1-run
+```
+The second process restores the paused run from Postgres and finishes it.

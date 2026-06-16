@@ -1,0 +1,14 @@
+langgraph
+langchain-core
+langchain-nebius
+langgraph-checkpoint-postgres
+psycopg[binary]
+psycopg-pool
+fastapi
+uvicorn
+tree-sitter
+tree-sitter-python
+python-dotenv
+httpx
+pyyaml
+pytest

@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Code Review Agent</title>
+<style>
+  :root {
+    --bg:#0f1115; --panel:#171a21; --line:#262b36; --txt:#e6e9ef; --muted:#8b93a7;
+    --crit:#ef4444; --high:#f97316; --med:#eab308; --low:#3b82f6;
+    --accent:#22c55e; --accent2:#3b82f6;
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; font:15px/1.5 ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+         background:var(--bg); color:var(--txt); }
+  header { padding:20px 28px; border-bottom:1px solid var(--line); }
+  header h1 { margin:0; font-size:18px; letter-spacing:.2px; }
+  header p { margin:4px 0 0; color:var(--muted); font-size:13px; }
+  main { max-width:920px; margin:0 auto; padding:24px 20px 80px; }
+  .row { display:flex; gap:10px; }
+  input[type=text] { flex:1; padding:11px 13px; background:var(--panel); border:1px solid var(--line);
+                     color:var(--txt); border-radius:8px; font-size:14px; }
+  button { cursor:pointer; border:1px solid var(--line); background:var(--panel); color:var(--txt);
+           padding:10px 16px; border-radius:8px; font-size:14px; transition:.12s; }
+  button:hover { border-color:#3a4150; }
+  button:disabled { opacity:.5; cursor:not-allowed; }
+  .primary { background:var(--accent2); border-color:var(--accent2); color:#fff; font-weight:600; }
+  .approve { background:var(--accent); border-color:var(--accent); color:#06230f; font-weight:600; }
+  .bar { display:flex; align-items:center; justify-content:space-between; gap:12px; margin:22px 0 12px; }
+  .status { color:var(--muted); font-size:13px; }
+  .pill { display:inline-block; padding:2px 9px; border-radius:999px; font-size:11px; font-weight:700;
+          text-transform:uppercase; letter-spacing:.4px; color:#0b0d12; }
+  .crit{background:var(--crit)} .high{background:var(--high)} .med{background:var(--med)} .low{background:var(--low)}
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:10px;
+          padding:0; margin:12px 0; overflow:hidden; }
+  .card.rejected { opacity:.42; }
+  .card-hd { padding:13px 16px 11px; }
+  .card-hd h3 { margin:0; font-size:14.5px; font-weight:600; display:flex; align-items:center; gap:9px; }
+  .meta { margin-top:5px; color:var(--muted); font-size:12px; }
+  .meta .loc { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; color:#aab2c5; }
+  .meta .sep { opacity:.5; margin:0 6px; }
+  .chip { display:inline-block; padding:1px 7px; border-radius:5px; font-size:10.5px;
+          border:1px solid var(--line); color:var(--muted); }
+  .card-body { border-top:1px solid var(--line); }
+  .section { padding:11px 16px; }
+  .section + .section { border-top:1px solid #1f2430; }
+  .section .lbl { font-size:10.5px; font-weight:700; letter-spacing:.7px; color:var(--muted); margin-bottom:5px; }
+  .section .bd { white-space:pre-wrap; font-size:13.5px; }
+  .section .bd code, .section .bd pre { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; }
+  .card-ft { display:flex; justify-content:flex-end; gap:8px; padding:10px 16px; border-top:1px solid var(--line); }
+  .card-ft button { padding:6px 12px; font-size:13px; }
+  .danger { color:#fca5a5; }
+  .banner { padding:10px 14px; border-radius:8px; margin:12px 0; font-size:13px; }
+  .ok { background:#06230f; border:1px solid #14532d; color:#bbf7d0; }
+  .err { background:#2a0f12; border:1px solid #7f1d1d; color:#fecaca; }
+  .warn { background:#2a230f; border:1px solid #854d0e; color:#fde68a; }
+  .pipeline { color:var(--muted); font-size:13px; margin:18px 0 10px; min-height:18px; }
+  .agent-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
+  @media (max-width:720px){ .agent-grid { grid-template-columns:1fr; } }
+  .agent-col { background:var(--panel); border:1px solid var(--line); border-top:3px solid #2b3242;
+               border-radius:10px; padding:12px 14px; min-height:150px; transition:border-color .2s; }
+  .agent-col.running { border-top-color:var(--accent2); }
+  .agent-col.done { border-top-color:var(--accent); }
+  .agent-col.degraded { border-top-color:var(--crit); }
+  .agent-hd { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+  .agent-hd .name { font-weight:600; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:13.5px; }
+  .badge { font-size:10px; text-transform:uppercase; letter-spacing:.5px; padding:2px 8px;
+           border-radius:999px; border:1px solid var(--line); color:var(--muted); white-space:nowrap; }
+  .badge.running { color:#bfdbfe; border-color:#1e40af; background:#0f1d3a; }
+  .badge.done { color:#bbf7d0; border-color:#14532d; background:#06230f; }
+  .badge.degraded { color:#fecaca; border-color:#7f1d1d; background:#2a0f12; }
+  .agent-role { color:var(--muted); font-size:12px; font-style:italic; margin:9px 0 11px; }
+  .agent-log { display:flex; flex-direction:column; gap:6px; }
+  .log-line { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:11.5px;
+              background:#0e1117; border:1px solid var(--line); border-radius:6px; padding:6px 9px; color:#cbd3e1; }
+  .log-line.muted { color:var(--muted); }
+  .spinner { display:inline-block; width:14px; height:14px; border:2px solid var(--muted);
+             border-top-color:transparent; border-radius:50%; animation:spin .8s linear infinite; vertical-align:-2px; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+</style>
+</head>
+<body>
+<header>
+  <h1>Code Review Agent</h1>
+  <p>Paste a GitHub PR URL → review findings → approve to post comments.</p>
+</header>
+<main>
+  <div class="row">
+    <input id="url" type="text" placeholder="https://github.com/owner/repo/pull/123"
+           value="https://github.com/atlas1408-code/eval-target-repo/pull/1" />
+    <button id="reviewBtn" class="primary" onclick="startReview()">Review</button>
+  </div>
+
+  <div id="msg"></div>
+
+  <div id="agentsWrap" style="display:none">
+    <div id="pipeline" class="pipeline"></div>
+    <div id="agents" class="agent-grid"></div>
+  </div>
+
+  <div id="result" style="display:none">
+    <div class="bar">
+      <div class="status" id="status"></div>
+      <div class="acts">
+        <button class="approve" id="approveBtn" onclick="decide('approve')">Approve &amp; post</button>
+        <button onclick="decide('reject')">Reject all</button>
+      </div>
+    </div>
+    <div id="findings"></div>
+  </div>
+</main>
+
+<script>
+let RUN_ID = null;
+let FINDINGS = [];
+const rejected = new Set();
+const sevClass = s => ({critical:'crit',high:'high',medium:'med',low:'low'}[s] || 'low');
+const el = id => document.getElementById(id);
+
+function msg(text, kind) {
+  el('msg').innerHTML = text ? `<div class="banner ${kind||'warn'}">${text}</div>` : '';
+}
+
+async function api(path, opts) {
+  const r = await fetch(path, opts);
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(data.detail || r.statusText);
+  return data;
+}
+
+const AGENTS = ['quality', 'security', 'test_gap'];
+let PIPE = {}, finished = false;
+
+function agentSkeleton() {
+  el('agents').innerHTML = AGENTS.map(a => `
+    <div class="agent-col" id="col-${a}">
+      <div class="agent-hd"><span class="name">${a}</span>
+           <span class="badge queued" id="badge-${a}">queued</span></div>
+      <div class="agent-role" id="role-${a}"></div>
+      <div class="agent-log" id="log-${a}"></div>
+    </div>`).join('');
+}
+
+function setBadge(a, state) {
+  const b = el('badge-' + a);
+  b.className = 'badge ' + state;
+  b.textContent = state;
+  el('col-' + a).className = 'agent-col ' + state;
+}
+function addLog(a, text, muted) {
+  el('log-' + a).insertAdjacentHTML('beforeend',
+    `<div class="log-line${muted ? ' muted' : ''}">${esc(text)}</div>`);
+}
+
+function renderPipe() {
+  const parts = [];
+  if (PIPE.fetch) parts.push(PIPE.fetch.status === 'done'
+    ? `📄 ${esc(PIPE.fetch.title || 'PR')} — ${PIPE.fetch.files} file(s), ${PIPE.fetch.hunks} hunk(s)`
+    : '📄 fetching PR diff…');
+  if (PIPE.context) parts.push(PIPE.context.status === 'done' ? '🌳 context ready' : '🌳 building context…');
+  if (PIPE.consolidate) parts.push(`🧮 consolidated ${PIPE.consolidate.count} finding(s)`);
+  el('pipeline').innerHTML = parts.join(' &nbsp;·&nbsp; ');
+}
+
+function onProgress(d) {
+  if (d.agent) {
+    if (d.event === 'started') { setBadge(d.agent, 'running'); el('role-' + d.agent).textContent = d.role || ''; addLog(d.agent, '▶ started'); }
+    else if (d.event === 'reviewing') addLog(d.agent, '👀 reviewing ' + d.target, true);
+    else if (d.event === 'model') addLog(d.agent, '🔍 ' + d.model, true);
+    else if (d.event === 'done') { setBadge(d.agent, 'done'); addLog(d.agent, `✓ ${d.count} finding(s) · ${d.tokens} tok`); }
+    else if (d.event === 'degraded') { setBadge(d.agent, 'degraded'); addLog(d.agent, `⚠ degraded · ${d.tokens} tok`); }
+  } else if (d.stage) {
+    PIPE[d.stage] = d; renderPipe();
+  }
+}
+
+function startReview() {
+  const url = el('url').value.trim();
+  if (!url) return;
+  rejected.clear(); RUN_ID = null; PIPE = {}; finished = false;
+  el('reviewBtn').disabled = true;
+  msg('', '');
+  el('result').style.display = 'none';
+  el('agentsWrap').style.display = 'block';
+  el('pipeline').textContent = 'starting…';
+  agentSkeleton();
+
+  const es = new EventSource('/review/stream?pr_url=' + encodeURIComponent(url));
+  es.onmessage = (ev) => {
+    const d = JSON.parse(ev.data);
+    if (d.type === 'meta') RUN_ID = d.run_id;
+    else if (d.type === 'progress') onProgress(d);
+    else if (d.type === 'done') { finished = true; es.close(); render(d); el('reviewBtn').disabled = false; }
+    else if (d.type === 'error') { finished = true; es.close(); msg('Error: ' + d.detail, 'err'); el('reviewBtn').disabled = false; }
+  };
+  es.onerror = () => {
+    if (finished) return;
+    es.close(); msg('Connection lost while streaming the review.', 'err');
+    el('reviewBtn').disabled = false;
+  };
+}
+
+function render(data) {
+  FINDINGS = data.findings || [];
+  el('result').style.display = 'block';
+  const degraded = data.degraded_agents?.length
+    ? ` · <span class="danger">degraded: ${data.degraded_agents.join(', ')}</span>` : '';
+  el('status').innerHTML =
+    `run <b>${data.run_id}</b> · status <b>${data.status}</b> · ${FINDINGS.length} finding(s)${degraded}`;
+
+  const posted = data.status === 'posted';
+  el('approveBtn').disabled = posted;
+  if (posted) { msg('✅ Comments posted to the PR.', 'ok'); }
+
+  el('findings').innerHTML = FINDINGS.map((f, i) => {
+    const sym = f.symbol ? `<span class="sep">·</span>${esc(f.symbol)}()` : '';
+    const section = (label, body) => body
+      ? `<div class="section"><div class="lbl">${label}</div><div class="bd">${esc(body)}</div></div>` : '';
+    return `
+    <div class="card ${rejected.has(i)?'rejected':''}" id="card-${i}">
+      <div class="card-hd">
+        <h3><span class="pill ${sevClass(f.severity)}">${f.severity}</span>
+            <span>${esc(f.title || '(untitled finding)')}</span></h3>
+        <div class="meta">
+          <span class="chip">${f.agent}</span>
+          <span class="sep">·</span><span class="loc">${esc(f.path)}:${f.line}</span>${sym}
+          <span class="sep">·</span>${f.in_hunk ? 'inline' : 'general comment'}
+        </div>
+      </div>
+      <div class="card-body">
+        ${section('PROBLEM', f.problem)}
+        ${section('SUGGESTION', f.suggestion)}
+      </div>
+      <div class="card-ft">
+        <button onclick="toggleReject(${i})">${rejected.has(i)?'Undo reject':'Reject'}</button>
+        <button onclick="refine(${i})" ${posted?'disabled':''}>Refine suggestion</button>
+      </div>
+    </div>`;
+  }).join('') || '<div class="banner warn">No findings.</div>';
+}
+
+const esc = s => (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+function toggleReject(i) {
+  rejected.has(i) ? rejected.delete(i) : rejected.add(i);
+  el('card-'+i).classList.toggle('rejected', rejected.has(i));
+  el('card-'+i).querySelector('.card-ft button').textContent = rejected.has(i)?'Undo reject':'Reject';
+}
+
+async function refine(i) {
+  const instruction = prompt('How should this comment be rewritten?');
+  if (!instruction) return;
+  msg('<span class="spinner"></span> Refining…', 'warn');
+  try {
+    const data = await api(`/run/${RUN_ID}/decision`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({action:'refine', refine:[{index:i, instruction}]})
+    });
+    render(data); msg('', '');
+  } catch (e) { msg('Error: ' + e.message, 'err'); }
+}
+
+async function decide(action) {
+  if (action === 'reject' && !confirm('Reject the whole run and post nothing?')) return;
+  el('approveBtn').disabled = true;
+  msg('<span class="spinner"></span> ' + (action==='approve'?'Posting…':'Finishing…'), 'warn');
+  try {
+    const data = await api(`/run/${RUN_ID}/decision`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({action, rejected:[...rejected]})
+    });
+    render(data);
+    if (action === 'reject') msg('Run rejected — nothing posted.', 'warn');
+  } catch (e) { msg('Error: ' + e.message, 'err'); el('approveBtn').disabled = false; }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,23 @@
+# OS
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.pytest_cache/
+
+# Secrets / local env (templates like .env.example / .env.sample stay tracked)
+.env
+.env.local
+.env.*.local
+*.key
+*.pem
+
+# Node
+node_modules/
+dist/
+
+# Nested standalone repo — versioned & pushed separately (github.com/atlas1408-code/eval-target-repo)
+Week-3/eval-target-repo/
