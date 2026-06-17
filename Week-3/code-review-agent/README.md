@@ -71,7 +71,7 @@ docker compose up -d        # Postgres on host port 5433
 | `VERIFIER_MODEL` | false-positive filter | defaults to Qwen3-235B; distinct from the agents |
 | `JUDGE_MODEL` | the eval only | defaults to `openai/gpt-oss-120b`; a different family than the reviewers/verifier |
 | `GITHUB_TOKEN` | posting comments | PAT (classic `repo`, or fine-grained with PR read/write) for the repo you review. Reads work unauthenticated. |
-| `LANGCHAIN_TRACING_V2` / `LANGCHAIN_API_KEY` / `LANGCHAIN_PROJECT` | optional | turns on LangSmith tracing |
+| `LANGCHAIN_TRACING_V2` / `LANGCHAIN_API_KEY` / `LANGCHAIN_PROJECT` | observability | LangSmith tracing — every model call is traced to the project. Runs fine without it. |
 
 ## 60-second run-through
 

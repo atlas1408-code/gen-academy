@@ -10,6 +10,7 @@ tree-sitter
 tree-sitter-python
 ruff
 python-dotenv
+langsmith
 httpx
 pyyaml
 pytest

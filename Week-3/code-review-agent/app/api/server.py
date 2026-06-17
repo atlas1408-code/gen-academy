@@ -18,11 +18,17 @@ from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel
 from langgraph.types import Command
 
+from app import config
 from app.graph import build_graph, open_pg_checkpointer
 from app.tools.github import GitHubError
 
 app = FastAPI(title="Code Review Agent")
 _STATIC = Path(__file__).parent / "static"
+
+
+@app.on_event("startup")
+def _startup() -> None:
+    config.log_tracing_status()
 
 
 class ReviewRequest(BaseModel):

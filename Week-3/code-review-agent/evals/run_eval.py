@@ -20,6 +20,7 @@ from pathlib import Path
 import psycopg
 import yaml
 
+from app import config
 from app.config import JUDGE_MODEL, MODELS
 from app.db.repo import DATABASE_URL
 from app.graph import build_graph, open_pg_checkpointer
@@ -79,6 +80,7 @@ def main() -> None:
     judge_tokens = 0
     pr_rows: list[dict] = []
 
+    config.log_tracing_status()
     print(f"Eval over {len(prs)} PRs · judge = {JUDGE_MODEL}\n")
     for pr in prs:
         run_id = f"eval-{pr['name']}-{stamp}"

@@ -42,6 +42,24 @@ VERIFIER_MODEL = os.getenv("VERIFIER_MODEL", "Qwen/Qwen3-235B-A22B-Instruct-2507
 # verifier above, to avoid self-grading bias when scoring precision.
 JUDGE_MODEL = os.getenv("JUDGE_MODEL", "openai/gpt-oss-120b")
 
+# ── LangSmith tracing ─────────────────────────────────────────────────────
+# LangChain auto-traces when these env vars are set (loaded above via .env):
+# LANGCHAIN_TRACING_V2=true, LANGCHAIN_API_KEY, LANGCHAIN_PROJECT. Exposed here
+# so startup can report status.
+LANGSMITH_ENABLED: bool = (
+    os.getenv("LANGCHAIN_TRACING_V2", "").lower() == "true"
+    and bool(os.getenv("LANGCHAIN_API_KEY"))
+)
+LANGSMITH_PROJECT: str = os.getenv("LANGCHAIN_PROJECT", "code-review-agent")
+
+
+def log_tracing_status() -> None:
+    if LANGSMITH_ENABLED:
+        print(f"[langsmith] tracing ON → project {LANGSMITH_PROJECT!r}")
+    else:
+        print("[langsmith] tracing OFF "
+              "(set LANGCHAIN_TRACING_V2=true + LANGCHAIN_API_KEY to enable)")
+
 
 def require_nebius_key() -> str:
     return _require("NEBIUS_API_KEY")
