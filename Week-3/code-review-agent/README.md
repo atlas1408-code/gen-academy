@@ -21,7 +21,12 @@ refine before anything is posted.
 
 Python 3.11+ · LangGraph + LangChain · `langchain-nebius` · Postgres
 (`PostgresSaver` checkpointer + app tables) · FastAPI + a single static HTML page
-· tree-sitter (`tree-sitter` + `tree-sitter-python`). No vector DB, no Redis.
+· tree-sitter (`tree-sitter` + `tree-sitter-python`) · `ruff` for deterministic
+lint/SAST grounding. A separate verifier model cuts false positives, and an
+independent judge model scores eval precision. No vector DB, no Redis.
+
+**Current eval:** 100% recall · 85% precision · F1 92% · ~1 false positive/PR
+(measured by an independent judge — see _Evals_ below).
 
 ## How it works
 
@@ -60,6 +65,8 @@ docker compose up -d        # Postgres on host port 5433
 | `NEBIUS_API_KEY` | the agents | Nebius Token Factory key |
 | `NEBIUS_BASE_URL` | the agents | `https://api.tokenfactory.nebius.com/v1/` |
 | `MODEL_QUALITY / MODEL_SECURITY / MODEL_TEST_GAP / MODEL_CONSOLIDATE` | the agents | verify against `/v1/models` for your account |
+| `VERIFIER_MODEL` | false-positive filter | defaults to Qwen3-235B; distinct from the agents |
+| `JUDGE_MODEL` | the eval only | defaults to `openai/gpt-oss-120b`; a different family than the reviewers/verifier |
 | `GITHUB_TOKEN` | posting comments | PAT (classic `repo`, or fine-grained with PR read/write) for the repo you review. Reads work unauthenticated. |
 | `LANGCHAIN_TRACING_V2` / `LANGCHAIN_API_KEY` / `LANGCHAIN_PROJECT` | optional | turns on LangSmith tracing |
 
@@ -128,11 +135,11 @@ app/
   graph.py             build_graph() + Postgres checkpointer
   format.py            compose_comment() — structured fields -> markdown
   progress.py          emit() -> LangGraph custom stream (live UI events)
-  nodes/               fetch_pr, build_context, agents, consolidate, human_gate, post_comments
-  tools/               github (diff/hunks/posting), treesitter_ctx, json_repair
+  nodes/               fetch_pr, build_context, agents, consolidate, verify, human_gate, post_comments
+  tools/               github (diff/hunks/posting), treesitter_ctx, static_analysis (ruff), json_repair
   db/                  schema.sql, repo.py (runs/findings/approvals/token_usage/posted_comments)
   api/                 server.py (FastAPI) + static/index.html
-evals/   prs.yaml, run_eval.py, cost_summary.py
+evals/   prs.yaml, run_eval.py (precision/recall), judge.py, label_cli.py, cost_summary.py
 scripts/ durability_demo.py + per-phase acceptance checks
 tests/   pytest suite
 ```
