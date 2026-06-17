@@ -107,6 +107,7 @@
       </div>
     </div>
     <div id="findings"></div>
+    <div id="suppressed"></div>
   </div>
 </main>
 
@@ -223,6 +224,7 @@ function render(data) {
             <span>${esc(f.title || '(untitled finding)')}</span></h3>
         <div class="meta">
           <span class="chip">${f.agent}</span>
+          ${f.confidence ? `<span class="chip">conf: ${esc(f.confidence)}</span>` : ''}
           <span class="sep">·</span><span class="loc">${esc(f.path)}:${f.line}</span>${sym}
           <span class="sep">·</span>${f.in_hunk ? 'inline' : 'general comment'}
         </div>
@@ -237,6 +239,33 @@ function render(data) {
       </div>
     </div>`;
   }).join('') || '<div class="banner warn">No findings.</div>';
+
+  renderSuppressed(data.suppressed || []);
+}
+
+function renderSuppressed(list) {
+  if (!list.length) { el('suppressed').innerHTML = ''; return; }
+  const items = list.map(f => `
+    <div class="card" style="opacity:.7">
+      <div class="card-hd">
+        <h3><span class="pill ${sevClass(f.severity)}">${f.severity}</span>
+            <span>${esc(f.title || '(untitled)')}</span></h3>
+        <div class="meta">
+          <span class="chip">${f.agent}</span>
+          ${f.confidence ? `<span class="chip">conf: ${esc(f.confidence)}</span>` : ''}
+          <span class="sep">·</span><span class="loc">${esc(f.path)}:${f.line}</span>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="section"><div class="lbl">PROBLEM</div><div class="bd">${esc(f.problem)}</div></div>
+        ${f.suppress_reason ? `<div class="section"><div class="lbl">WHY FILTERED</div><div class="bd">${esc(f.suppress_reason)}</div></div>` : ''}
+      </div>
+    </div>`).join('');
+  el('suppressed').innerHTML =
+    `<details style="margin-top:18px">
+       <summary style="cursor:pointer;color:var(--muted)">▸ ${list.length} filtered as likely false positives (not posted)</summary>
+       <div style="margin-top:10px">${items}</div>
+     </details>`;
 }
 
 const esc = s => (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');

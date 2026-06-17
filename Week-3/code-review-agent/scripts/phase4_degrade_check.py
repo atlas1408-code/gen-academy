@@ -40,7 +40,9 @@ _FAKES = {
 
 def main() -> None:
     import app.nodes.agents as agents
+    import app.nodes.verify as verify
     agents.get_model = lambda agent: _FAKES[agent]   # monkeypatch
+    verify.get_verifier = lambda: _FakeLLM('{"verdicts": []}')  # fail-open, no network
 
     repo.init_app_tables()
     cfg = {"configurable": {"thread_id": "phase4-degrade"}}

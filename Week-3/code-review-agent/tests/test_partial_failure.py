@@ -8,6 +8,7 @@ import pytest
 import app.nodes.agents as agents_mod
 import app.nodes.consolidate as consolidate_mod
 import app.nodes.fetch_pr as fetch_mod
+import app.nodes.verify as verify_mod
 from app.db import repo
 
 _DIFF = """\
@@ -63,6 +64,8 @@ def stubbed(monkeypatch):
     fakes = {"quality": _LLM(_good(2)), "security": _LLM(_GARBAGE),
              "test_gap": _LLM(_good(3))}
     monkeypatch.setattr(agents_mod, "get_model", lambda a: fakes[a])
+    # verifier returns no verdicts -> fail-open (keep all findings), no network.
+    monkeypatch.setattr(verify_mod, "get_verifier", lambda: _LLM('{"verdicts": []}'))
 
 
 def test_one_agent_degrades_others_still_review(stubbed):

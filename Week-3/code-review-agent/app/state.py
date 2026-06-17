@@ -20,6 +20,7 @@ class Finding(TypedDict):
     title: str          # concise headline (<= ~8 words)
     problem: str        # concise reframed feedback: what's wrong and why
     suggestion: str     # concrete suggested fix (may include a short snippet)
+    confidence: str     # verifier confidence: high | medium | low | "" (unverified)
     draft_comment: str  # composed markdown body to post (derived from the above)
     in_hunk: bool       # whether `line` falls inside a diff hunk (postable inline)
 
@@ -48,7 +49,8 @@ class ReviewState(TypedDict, total=False):
     findings: Annotated[list[Finding], operator.add]   # raw union from all agents
     degraded_agents: Annotated[list[str], operator.add]
 
-    consolidated: list[Finding]          # deduped, hunk-validated, severity-ranked
+    consolidated: list[Finding]          # deduped, hunk-validated, verified, ranked
+    suppressed: list[Finding]            # filtered out by the verifier as likely FPs
     refinements: dict[str, str]          # "path|line|side" -> regenerated comment
     decision: Optional[dict[str, Any]]   # human gate result, e.g. {"action": "approve"}
     posted: bool

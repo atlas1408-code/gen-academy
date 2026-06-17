@@ -47,6 +47,7 @@ def human_gate(state: ReviewState, config: RunnableConfig) -> dict:
         "pr_url": state.get("pr_url"),
         "summary": f"{len(findings)} finding(s) ready for review",
         "findings": findings,
+        "suppressed": state.get("suppressed", []),
         "degraded_agents": state.get("degraded_agents", []),
     }
     decision = interrupt(payload)

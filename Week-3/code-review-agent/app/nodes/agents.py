@@ -126,6 +126,7 @@ def _coerce_findings(agent_name: str, data: dict[str, Any]) -> list[Finding]:
             # fall back to legacy `rationale` if a model still emits it
             problem=str(item.get("problem", item.get("rationale", ""))).strip(),
             suggestion=str(item.get("suggestion", "")).strip(),
+            confidence="",   # set by the verify node (#2)
             draft_comment="",
             in_hunk=False,  # consolidate (Phase 5) computes the real value
         )

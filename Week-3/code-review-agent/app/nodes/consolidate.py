@@ -36,6 +36,7 @@ def _merge_group(group: list[Finding]) -> Finding:
         title=top.get("title", ""),
         problem=problems or top.get("problem", ""),
         suggestion=top.get("suggestion", ""),
+        confidence=top.get("confidence", ""),
         draft_comment=top.get("draft_comment", ""),
         in_hunk=top["in_hunk"],
     )

@@ -2,8 +2,8 @@
 
 Topology:
     START -> fetch_pr -> build_context -> {quality, security, test_gap}
-          -> consolidate -> human_gate --(approve)--> post_comments -> END
-                                        --(else)----> END
+          -> consolidate -> verify -> human_gate --(approve)--> post_comments -> END
+                                                  --(else)----> END
 
 The three specialists fan out from build_context and fan in at consolidate;
 LangGraph waits for all three before running consolidate. Phase 1 uses
@@ -21,6 +21,7 @@ from app.nodes.consolidate import consolidate
 from app.nodes.fetch_pr import fetch_pr
 from app.nodes.human_gate import human_gate, route_after_gate
 from app.nodes.post_comments import post_comments
+from app.nodes.verify import verify
 from app.state import ReviewState
 
 AGENTS = ("quality", "security", "test_gap")
@@ -34,6 +35,7 @@ def build_graph(checkpointer=None):
     for name in AGENTS:
         g.add_node(name, make_agent_node(name))
     g.add_node("consolidate", consolidate)
+    g.add_node("verify", verify)
     g.add_node("human_gate", human_gate)
     g.add_node("post_comments", post_comments)
 
@@ -44,7 +46,8 @@ def build_graph(checkpointer=None):
         g.add_edge("build_context", name)
         # ...and fan in: consolidate waits for all three.
         g.add_edge(name, "consolidate")
-    g.add_edge("consolidate", "human_gate")
+    g.add_edge("consolidate", "verify")
+    g.add_edge("verify", "human_gate")
     g.add_conditional_edges(
         "human_gate",
         route_after_gate,

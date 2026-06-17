@@ -31,6 +31,12 @@ def get_model(agent: str) -> ChatNebius:
 
 
 @lru_cache(maxsize=None)
+def get_verifier() -> ChatNebius:
+    """In-product model that verifies findings to cut false positives (#2)."""
+    return _build(config.VERIFIER_MODEL)
+
+
+@lru_cache(maxsize=None)
 def get_judge() -> ChatNebius:
     """Independent model used by the eval to score finding validity (precision)."""
     return _build(config.JUDGE_MODEL)

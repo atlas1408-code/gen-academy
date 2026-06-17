@@ -57,6 +57,7 @@ def _state_response(run_id: str, snap) -> dict:
         "pr_url": values.get("pr_url"),
         "degraded_agents": values.get("degraded_agents", []),
         "findings": values.get("consolidated", []),
+        "suppressed": values.get("suppressed", []),
         "posted": bool(values.get("posted", False)),
     }
 

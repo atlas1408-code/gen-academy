@@ -33,8 +33,13 @@ MODELS = {
     ),
 }
 
-# Eval judge — deliberately a DIFFERENT model family than any reviewer above,
-# to avoid self-grading bias when scoring precision.
+# In-product verifier (improvement #2) — re-checks each finding to cut false
+# positives. Distinct from the finding-producing agents (quality/security/
+# test_gap) AND from the eval judge, so the eval stays an independent measure.
+VERIFIER_MODEL = os.getenv("VERIFIER_MODEL", "Qwen/Qwen3-235B-A22B-Instruct-2507")
+
+# Eval judge — deliberately a DIFFERENT model family than any reviewer OR the
+# verifier above, to avoid self-grading bias when scoring precision.
 JUDGE_MODEL = os.getenv("JUDGE_MODEL", "openai/gpt-oss-120b")
 
 

@@ -27,15 +27,16 @@ Python 3.11+ · LangGraph + LangChain · `langchain-nebius` · Postgres
 
 ```
                  ┌─ quality ─┐
-START → fetch_pr → build_context →┤  security  ├→ consolidate → human_gate ─approve→ post_comments → END
-                 └─ test_gap ─┘                      │  ▲                  ─reject──────────────────→ END
-                                                     └──┘ refine (regenerate suggestion, loop back)
+START → fetch_pr → build_context →┤  security  ├→ consolidate → verify → human_gate ─approve→ post_comments → END
+                 └─ test_gap ─┘                          │  ▲                        ─reject──────────────────→ END
+                                                         └──┘ refine (regenerate suggestion, loop back)
 ```
 
 - **fetch_pr** — parse the PR URL, fetch metadata + raw diff (REST), parse the diff into per-file hunks; retries 5xx/rate-limits, raises a clean error on 404/bad URL.
 - **build_context** — for each changed file, tree-sitter extracts the enclosing function/class, imports, and the conventional matching test path.
 - **quality / security / test_gap** — run in parallel; each calls its model through a JSON-repair helper and either appends findings or marks itself *degraded* (never crashes).
 - **consolidate** — validates each finding's `in_hunk` against the hunks, dedupes by `(path, line, side)`, applies any refinements, severity-ranks, and persists.
+- **verify** — an independent verifier model (distinct from the agents) re-checks each finding against the diff, assigns a confidence, and **suppresses likely false positives** (kept visible, never posted). Fails open. Lifted eval precision 67% → 84% with recall unchanged.
 - **human_gate** — `interrupt()`s for approval; resumes with approve / reject / refine.
 - **post_comments** — only on approve: inline comment if in a hunk, else a general PR comment; idempotent via a `(head_sha, path, line, side)` ledger.
 
