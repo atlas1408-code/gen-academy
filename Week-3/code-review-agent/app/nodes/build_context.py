@@ -7,7 +7,7 @@ file exists and references the changed symbols. All of this grounds the agents.
 """
 from app.progress import emit
 from app.state import ReviewState
-from app.tools import github, static_analysis, treesitter_ctx
+from app.tools import github, repo_index, static_analysis, treesitter_ctx
 
 
 def build_context(state: ReviewState) -> dict:
@@ -16,6 +16,14 @@ def build_context(state: ReviewState) -> dict:
     hunks = state.get("hunks", {})
     owner, repo = pr_meta.get("owner"), pr_meta.get("repo")
     head_sha = pr_meta.get("head_sha")
+
+    # A PR that itself touches test files is clearly handling its tests — don't
+    # raise deterministic "missing test" findings for it (this is what mis-fired
+    # on real-repo PRs). Otherwise, load the repo's actual test files (any
+    # layout) so the check doesn't depend on a rigid naming convention.
+    pr_touches_tests = any(repo_index.is_test_file(p) for p in hunks)
+    test_corpus = (None if pr_touches_tests
+                   else repo_index.load_test_corpus(owner, repo, head_sha))
 
     context: dict[str, dict] = {}
     static_signals: list[dict] = []
@@ -36,9 +44,9 @@ def build_context(state: ReviewState) -> dict:
             static_signals.append({**s, "path": path})
         blob["signals"] = signals
 
-        # deterministic test-existence check (grounds the test_gap agent)
+        # deterministic test-coverage check (grounds the test_gap agent)
         blob["test_exists"], blob["untested_symbols"] = _test_evidence(
-            blob, owner, repo, head_sha
+            blob, test_corpus, pr_touches_tests
         )
 
         context[path] = blob
@@ -52,14 +60,15 @@ def build_context(state: ReviewState) -> dict:
     return {"context": context, "static_signals": static_signals}
 
 
-def _test_evidence(blob: dict, owner, repo, head_sha) -> tuple[bool, list[str]]:
-    """Does the conventional test file exist, and which changed symbols are untested?"""
-    test_path = blob.get("matching_test")
+def _test_evidence(blob: dict, corpus: str | None, pr_touches_tests: bool) -> tuple[bool, list[str]]:
+    """Which changed symbols are referenced by no test in the repo?
+
+    Conservative: returns no untested symbols when the PR already touches tests,
+    when the changed file isn't a source file, or when the test corpus can't be
+    read — so we never claim 'missing test' without real evidence.
+    """
+    if pr_touches_tests or not blob.get("matching_test") or corpus is None:
+        return (corpus is not None), []
     symbols = [e["name"] for e in blob.get("enclosing", []) if e.get("name")]
-    if not test_path or not (owner and repo and head_sha):
-        return False, symbols
-    test_src = github.fetch_file_at(owner, repo, test_path, head_sha)
-    if not test_src:
-        return False, symbols
-    untested = [s for s in symbols if s not in test_src]
+    untested = [s for s in symbols if s not in corpus]
     return True, untested

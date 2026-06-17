@@ -17,6 +17,31 @@ _MAX_FILES = 40                     # cap files scanned (cost/latency guard)
 _MAX_REFS_PER_SYMBOL = 6
 
 
+_MAX_TEST_FILES = 25
+
+
+def is_test_file(path: str) -> bool:
+    """Heuristic for a Python test file across common layouts."""
+    if not path.endswith(".py"):
+        return False
+    base = path.rsplit("/", 1)[-1]
+    return (base.startswith("test_") or base.endswith("_test.py")
+            or "/tests/" in f"/{path}" or "/test/" in f"/{path}")
+
+
+def load_test_corpus(owner: str, repo: str, ref: str) -> str | None:
+    """Concatenated contents of the repo's test files (capped), or None if the
+    tree can't be read / there are no test files (so callers stay conservative)."""
+    if not (owner and repo and ref):
+        return None
+    paths = [p for p in github.fetch_tree(owner, repo, ref) if is_test_file(p)]
+    paths = paths[:_MAX_TEST_FILES]
+    if not paths:
+        return None
+    parts = [s for p in paths if (s := github.fetch_file_at(owner, repo, p, ref))]
+    return "\n".join(parts) if parts else None
+
+
 def find_references(
     owner: str, repo: str, ref: str, symbols: list[str], exclude_paths: set[str],
 ) -> dict[str, list[dict]]:

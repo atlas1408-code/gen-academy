@@ -31,8 +31,9 @@ _LEDGER = _HERE / "results_ledger.jsonl"
 _LASTRUN = _HERE / "last_run.json"
 
 
-def _run_pr(pr: dict) -> tuple[list[dict], str, list[str]]:
-    run_id = f"eval-{pr['name']}"
+def _run_pr(pr: dict, run_id: str) -> tuple[list[dict], str, list[str]]:
+    # Unique thread_id per run: the Postgres checkpointer + additive `findings`
+    # reducer would otherwise leak a previous run's findings into this one.
     cfg = {"configurable": {"thread_id": run_id}}
     with open_pg_checkpointer() as cp:
         graph = build_graph(cp)
@@ -65,6 +66,8 @@ def main() -> None:
     spec = yaml.safe_load((_HERE / "prs.yaml").read_text())
     thr = spec.get("thresholds", {})
     prs = spec["prs"]
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
+    run_ids: list[str] = []
 
     records: list[dict] = []                 # per-finding, for last_run.json
     agent_stats: dict[str, Counter] = defaultdict(Counter)
@@ -78,7 +81,9 @@ def main() -> None:
 
     print(f"Eval over {len(prs)} PRs · judge = {JUDGE_MODEL}\n")
     for pr in prs:
-        findings, diff, degraded = _run_pr(pr)
+        run_id = f"eval-{pr['name']}-{stamp}"
+        run_ids.append(run_id)
+        findings, diff, degraded = _run_pr(pr, run_id)
         expected = pr.get("expected") or []
         matched: set[str] = set()
         v = i = u = 0
@@ -139,7 +144,7 @@ def main() -> None:
     }
     passed = all(c[2] for c in checks.values())
 
-    agent_tokens = _agent_token_totals([f"eval-{p['name']}" for p in prs])
+    agent_tokens = _agent_token_totals(run_ids)
 
     # ---------- report ----------
     L: list[str] = []
@@ -189,7 +194,7 @@ def main() -> None:
     L.append("| PR | findings | valid | invalid | recall | degraded |")
     L.append("|---|---|---|---|---|---|")
     for r in pr_rows:
-        rec = f"{r['caught']}/{r['expected']}" if r["expected"] else "— (control)"
+        rec = f"{r['caught']}/{r['expected']}" if r["expected"] else "— (precision only)"
         L.append(f"| {r['name']} | {r['n']} | {r['valid']} | {r['invalid']} | {rec} | {','.join(r['degraded']) or '—'} |")
     L.append("")
     L.append("## Cost (tokens)")

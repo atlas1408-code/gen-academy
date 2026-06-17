@@ -6,8 +6,10 @@
 # Ground truth for the seeded PRs lives in eval-target-repo/SEEDED_BUGS.md.
 #
 # To extend with real PRs: add an entry with `url` + `expected` (known issues).
-# A PR with `expected: []` is a clean/benign control used to probe noise (any
-# high/critical finding on it is almost certainly a false positive).
+# A PR with `expected: []` has NO recall ground truth — it contributes only to
+# precision/noise (the judge labels every finding). Two uses:
+#   - the seeded clean-control PR (should produce ~0 findings), and
+#   - real-world PRs below (measure how noisy the agent is on real, messy code).
 
 thresholds:
   recall_overall: 0.80        # catch >= 80% of known issues
@@ -97,3 +99,21 @@ prs:
     url: https://github.com/atlas1408-code/eval-target-repo/pull/4
     language: python
     expected: []   # benign, fully-tested change — noise/false-positive control
+
+  # ── Real-world PRs (merged, frozen diffs) — precision / noise probes on real,
+  #    messy code. No recall ground truth; they measure false-positive rate. ──
+  - name: real-click-3578
+    url: https://github.com/pallets/click/pull/3578
+    language: python
+    note: "Bug fix — double-bracketing of choices in synopsis"
+    expected: []
+  - name: real-click-3534
+    url: https://github.com/pallets/click/pull/3534
+    language: python
+    note: "Feature — incremental output in the pager"
+    expected: []
+  - name: real-requests-7502
+    url: https://github.com/psf/requests/pull/7502
+    language: python
+    note: "Bug fix — _encode_files detection for __getattr__-based file-likes"
+    expected: []

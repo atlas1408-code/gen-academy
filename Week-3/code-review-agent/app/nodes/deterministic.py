@@ -26,15 +26,14 @@ def deterministic_findings(state: ReviewState) -> dict:
                 line = e["start_line"]
                 break
 
-        why = ("has no matching test file" if not blob.get("test_exists")
-               else "is not referenced by the matching test file")
         syms = ", ".join(untested)
         f = Finding(
             agent="test_gap", path=path, line=line, side="RIGHT",
             symbol=untested[0], severity="medium",
             title="Missing test coverage for new code",
-            problem=f"{path} adds/changes {syms} but {why} ({test_path}).",
-            suggestion=f"Add tests in {test_path} covering {syms}.",
+            problem=f"{path} adds/changes {syms}, which are not referenced by any "
+                    f"test in the repository.",
+            suggestion=f"Add tests covering {syms} (e.g. in {test_path}).",
             source="deterministic", confidence="high",
             draft_comment="", in_hunk=False,
         )
