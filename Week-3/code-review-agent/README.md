@@ -25,9 +25,9 @@ Python 3.11+ · LangGraph + LangChain · `langchain-nebius` · Postgres
 lint/SAST grounding. A separate verifier model cuts false positives, and an
 independent judge model scores eval precision. No vector DB, no Redis.
 
-**Current eval:** ~100% recall · ~80% precision · ~1–2 false positives/PR
-(measured by an independent judge over 5 PRs incl. a cross-file and a clean-control
-case; precision varies run-to-run on the small set — see _Evals_ below).
+**Current eval:** 88% recall · 86% precision · F1 87% · 0.4 false positives/PR
+(independent judge over 8 PRs incl. real-world PRs + a clean control; recall/precision
+vary run-to-run on the small set — see _Evals_ below).
 
 ## How it works
 
@@ -49,6 +49,39 @@ START → fetch_pr → build_context → repo_context →─┼─ security ─�
 - **post_comments** — only on approve: inline comment if in a hunk, else a general PR comment; idempotent via a `(head_sha, path, line, side)` ledger.
 
 Each finding is structured: `severity · title · problem · suggestion · location (path:line + symbol)`.
+
+### Low-level: where the components fit
+
+```
+CLIENT     Browser (single-page UI) ──HTTP + Server-Sent Events──┐
+                                                                 ▼
+API        FastAPI  (app/api/server.py)
+           GET / · GET /review/stream (SSE) · POST /review ·
+           GET /run/{id} · POST /run/{id}/decision
+                                                  │ build_graph() · invoke / resume
+                                                  ▼
+ORCHESTR.  LangGraph state machine  (app/graph.py + app/nodes/)
+           fetch_pr → build_context → repo_context →
+               { quality · security · test_gap · deterministic } →
+               consolidate → verify → human_gate → post_comments
+                                                  │  nodes talk to ↓
+
+EXTERNAL   • Nebius Token Factory (ChatNebius) — 4 agent models + verifier;
+             EVERY call auto-traced to ─────────▶ LangSmith (project: code-review-agent)
+           • GitHub REST — reads (diff, files, tree, linked issues) in
+             fetch_pr / build_context / repo_context;  the one WRITE
+             (review comment) in post_comments
+           • tree-sitter + ruff — local (in-process / subprocess) in build_context
+
+STATE      Postgres
+           • PostgresSaver checkpointer — durable graph state (crash-resume + HITL pause)
+           • app tables — runs, findings, approvals, token_usage, posted_comments
+
+EVAL       evals/run_eval.py — drives the graph READ-ONLY (never posts) over
+           eval-target-repo's seeded PRs + real PRs (click, requests); an
+           independent judge (gpt-oss-120b) labels each finding →
+           precision/recall report (also traced to LangSmith)
+```
 
 ## Setup
 

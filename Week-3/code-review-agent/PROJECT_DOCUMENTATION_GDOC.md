@@ -17,7 +17,7 @@
 
 ## 1. The Primer — one-liner
 
-> My agent helps a **software engineer** review a **GitHub pull request** in a **browser (and via an API)**, replacing the manual, inconsistent ~30–60 minute first-pass review across correctness, security, and test coverage. It fetches the PR diff and code context and runs **three specialist reviewers in parallel** (quality, security, test-gap) on its own, grounds them in real linter/SAST output, filters likely false positives, and **hands off to the human to approve / reject / refine before any comment is posted**. I know it works because an independent eval measures it: **100% recall at 85% precision** (~1 false positive per PR).
+> My agent helps a **software engineer** review a **GitHub pull request** in a **browser (and via an API)**, replacing the manual, inconsistent ~30–60 minute first-pass review across correctness, security, and test coverage. It fetches the PR diff and code context and runs **three specialist reviewers in parallel** (quality, security, test-gap) on its own, grounds them in real linter/SAST output, filters likely false positives, and **hands off to the human to approve / reject / refine before any comment is posted**. I know it works because an independent eval measures it: **~88% recall at ~86% precision** (≈0.4 false positives per PR) over 8 PRs.
 
 **The three rules, applied:**
 - **Task completion, not single-shot accuracy** — success = a usable, ranked review the engineer approves and posts, measured end-to-end with **precision and recall**, not one good answer.
@@ -38,7 +38,7 @@
 | **What it must never do** | Never post a comment without human approval; never post duplicates on re-approval; never crash the whole run because one agent or tool failed; never commit secrets. |
 | **Human-in-the-loop** | The graph interrupts before any write. The human can **Approve** (post), **Reject** (drop a finding or the whole run), or **Refine** (regenerate a suggestion, which loops back through consolidation + verification). |
 | **When something breaks** | GitHub 5xx / rate-limit → retry with backoff (respects Retry-After); 404/bad URL → clean run-level error. A model returning bad JSON → repair-retry, then mark that agent **degraded** and continue. The verifier or ruff failing → **fail open** (keep findings; never lose them). Inline post rejected (422) → fall back to a general comment. |
-| **How I know it worked** | An independent-judge eval over 4 PRs: **recall 100%, precision 85%, F1 92%, ~1 false positive/PR**, all above threshold; 19 passing tests incl. failure-injection. |
+| **How I know it worked** | An independent-judge eval over **8 PRs** (seeded + real-world + a clean control): **recall 88%, precision 86%, F1 87%, 0.4 false positives/PR**, all above threshold; 19 passing tests incl. failure-injection. |
 
 ---
 
@@ -80,6 +80,37 @@ Flow (set this block to a monospace font in Docs):
 **Tech stack:** Python 3.12 · LangGraph + LangChain · langchain-nebius · Postgres (PostgresSaver checkpointer + runs/findings/approvals/token_usage/posted_comments tables) · FastAPI + a single static HTML page (live SSE UI) · tree-sitter + tree-sitter-python · ruff · pytest. No vector DB, no Redis.
 
 **Live UI:** the browser streams per-agent progress over Server-Sent Events — three columns go queued → running → done/degraded independently, each showing what it's reviewing, its model, and its result; then the ranked finding cards appear (with confidence chips), plus a collapsible "filtered as likely false positives" section.
+
+**Low-level — where each component fits** (set this block to a monospace font in Docs):
+
+    CLIENT     Browser (single-page UI) ──HTTP + Server-Sent Events──┐
+                                                                     ▼
+    API        FastAPI  (app/api/server.py)
+               GET / · GET /review/stream (SSE) · POST /review ·
+               GET /run/{id} · POST /run/{id}/decision
+                                                      │ build_graph() · invoke / resume
+                                                      ▼
+    ORCHESTR.  LangGraph state machine  (app/graph.py + app/nodes/)
+               fetch_pr → build_context → repo_context →
+                   { quality · security · test_gap · deterministic } →
+                   consolidate → verify → human_gate → post_comments
+                                                      │  nodes talk to ↓
+
+    EXTERNAL   - Nebius Token Factory (ChatNebius) — 4 agent models + verifier;
+                 EVERY call auto-traced to ────────▶ LangSmith (project: code-review-agent)
+               - GitHub REST — reads (diff, files, tree, linked issues) in
+                 fetch_pr / build_context / repo_context;  the one WRITE
+                 (review comment) in post_comments
+               - tree-sitter + ruff — local (in-process / subprocess) in build_context
+
+    STATE      Postgres
+               - PostgresSaver checkpointer — durable graph state (crash-resume + HITL pause)
+               - app tables — runs, findings, approvals, token_usage, posted_comments
+
+    EVAL       evals/run_eval.py — drives the graph READ-ONLY (never posts) over
+               eval-target-repo's seeded PRs + real PRs (click, requests); an
+               independent judge (gpt-oss-120b) labels each finding →
+               precision/recall report (also traced to LangSmith)
 
 ---
 
@@ -141,7 +172,9 @@ After the first working build, the project was hardened using a real evaluation 
 
 - **Tier 1 — repo-awareness, PR intent & injection hardening.** The agents now receive the PR's intent (title/description/linked issues), cross-file references for changed symbols (callers/blast radius), and treat all diff/PR text as untrusted (prompt-injection defense). A 5th eval PR was added that modifies an existing function's parameter order without updating its positional callers — a silent bug invisible to diff-only review. Result: the agent found the 5 callers and caught it (recall 1/1) with zero noise. A deterministic missing-test finding was also added so that bug class is grounded in fact, not LLM luck.
 
-**Honest caveat:** the eval set is small (4 buggy PRs + 1 clean control), so single-finding deltas are within run-to-run noise (precision has ranged ~76–86% across runs). Repo-awareness and intent show their value on modification and real PRs — additive PRs can't reward them. Expanding evals/prs.yaml with real PRs is the next eval step.
+- **Eval expanded with real PRs + observability.** Added 3 real merged PRs (pallets/click, psf/requests) as precision/noise probes. They immediately surfaced (and we fixed) two bugs the synthetic set couldn't: the deterministic missing-test check's rigid tests/test_<file>.py convention (false-positive on real repos) and an eval state-leak (reused thread_id + Postgres checkpointer + additive reducer bled findings across runs). LangSmith now traces every model call. Latest confirming run (8 PRs): recall 88%, precision 86%, F1 87%, 0.4 FP/PR.
+
+**Honest caveat:** the set is still small (4 buggy + 1 clean control + 3 real precision-only PRs), so single-finding deltas dominate — recall/precision vary run-to-run (recall 86–100%, precision 76–86%). A larger, labeled real-PR benchmark is the next eval step.
 
 ---
 
