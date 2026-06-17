@@ -33,6 +33,10 @@ MODELS = {
     ),
 }
 
+# Eval judge — deliberately a DIFFERENT model family than any reviewer above,
+# to avoid self-grading bias when scoring precision.
+JUDGE_MODEL = os.getenv("JUDGE_MODEL", "openai/gpt-oss-120b")
+
 
 def require_nebius_key() -> str:
     return _require("NEBIUS_API_KEY")

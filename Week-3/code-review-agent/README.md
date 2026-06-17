@@ -102,12 +102,20 @@ failure (one agent down → run still completes). Hermetic — no network or DB.
 ## Evals & cost
 
 ```bash
-PYTHONPATH=. .venv/bin/python -m evals.run_eval        # hit-rate vs evals/prs.yaml -> evals/last_report.md
+PYTHONPATH=. .venv/bin/python -m evals.run_eval        # precision + recall -> evals/last_report.md
+PYTHONPATH=. .venv/bin/python -m evals.label_cli 30    # human spot-check: judge vs you (Cohen's kappa)
 PYTHONPATH=. .venv/bin/python -m evals.cost_summary    # per-agent / per-run tokens + est. $
 ```
-`evals/prs.yaml` lists the seeded PRs and their expected findings (ground truth
-in the companion `eval-target-repo`). `run_eval` is read-only — it never posts.
-Edit the `PRICES` map in `cost_summary.py` to match your Nebius plan.
+`run_eval` runs the agent over `evals/prs.yaml` (read-only — never posts), then an
+**independent judge** (`evals/judge.py`, a different model family than the
+reviewers) labels every finding valid/invalid so we can report **precision** (noise),
+not just **recall** (coverage), plus F1, false-positives-per-PR, per-agent precision,
+and an FP taxonomy. Results are checked against thresholds in `prs.yaml`, written to
+`evals/last_report.md`, and appended to `evals/results_ledger.jsonl` (regression
+tracking over time). `prs.yaml` includes a **clean control PR** to probe noise.
+
+`label_cli` validates that the judge agrees with a human before you trust the
+precision number. Edit the `PRICES` map in `cost_summary.py` to match your Nebius plan.
 
 ## Layout
 

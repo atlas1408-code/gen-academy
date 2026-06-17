@@ -1,44 +1,85 @@
-# Eval set: the 3 seeded PRs in eval-target-repo, with their expected findings.
-# An expected finding is "caught" if any produced finding on the same file
-# contains one of its keywords (case-insensitive). Ground truth: SEEDED_BUGS.md.
+# Eval set for the code review agent.
+#
+# Recall  = of the known issues below, how many did the agent catch?
+# Precision = of the findings the agent produced, how many are valid (judged by
+#             an INDEPENDENT model — see evals/judge.py)?
+# Ground truth for the seeded PRs lives in eval-target-repo/SEEDED_BUGS.md.
+#
+# To extend with real PRs: add an entry with `url` + `expected` (known issues).
+# A PR with `expected: []` is a clean/benign control used to probe noise (any
+# high/critical finding on it is almost certainly a false positive).
+
+thresholds:
+  recall_overall: 0.80        # catch >= 80% of known issues
+  precision_overall: 0.70     # >= 70% of produced findings are valid
+  max_fp_per_pr: 3.0          # average false positives per PR
 
 prs:
   - name: security-sql-injection
     url: https://github.com/atlas1408-code/eval-target-repo/pull/1
+    language: python
     expected:
       - id: S1-sql-injection
-        agent: security
+        category: security
+        severity: critical
         path: app/search.py
+        lines: [11, 22]
+        description: "User-supplied `owner`/`term` are interpolated into the SQL query via an f-string (SQL injection)."
         keywords: ["sql injection", "parameteri", "interpolat", "f-string", "injection"]
       - id: S2-hardcoded-secret
-        agent: security
+        category: security
+        severity: high
         path: app/search.py
+        lines: [8, 8]
+        description: "A live-looking API token (EXPORT_API_TOKEN) is hardcoded in source."
         keywords: ["hardcoded", "secret", "credential", "api token", "api key", "token"]
 
   - name: quality-refactor
     url: https://github.com/atlas1408-code/eval-target-repo/pull/2
+    language: python
     expected:
       - id: Q1-mutable-default
-        agent: quality
+        category: quality
+        severity: medium
         path: app/digest.py
+        lines: [6, 6]
+        description: "build_digest uses a mutable default argument `tags=[]` shared across calls."
         keywords: ["mutable default", "default argument", "tags=[]", "shared", "mutable"]
       - id: Q2-duplicated-logic
-        agent: quality
+        category: quality
+        severity: low
         path: app/digest.py
+        lines: [33, 42]
+        description: "Title and body formatting blocks are near-identical, duplicated logic."
         keywords: ["duplicat", "repeated", "copy-paste", "extract a helper", "redundan"]
       - id: Q3-dead-code
-        agent: quality
+        category: quality
+        severity: low
         path: app/digest.py
+        lines: [27, 30]
+        description: "Code after an early `return` in build_digest is unreachable."
         keywords: ["dead code", "unreachable", "after return", "never executed"]
       - id: Q4-bare-except
-        agent: quality
+        category: quality
+        severity: medium
         path: app/digest.py
+        lines: [22, 25]
+        description: "A bare `except:` swallows all errors around the count step."
         keywords: ["bare except", "except:", "broad except", "catch-all", "swallow"]
 
   - name: test-gap
     url: https://github.com/atlas1408-code/eval-target-repo/pull/3
+    language: python
     expected:
       - id: T1-missing-test
-        agent: test_gap
+        category: test_gap
+        severity: medium
         path: app/stats.py
+        lines: [13, 33]
+        description: "New public functions (reading_time_minutes/note_stats) ship with no matching test file."
         keywords: ["test", "coverage", "untested", "no test"]
+
+  - name: clean-feature-control
+    url: https://github.com/atlas1408-code/eval-target-repo/pull/4
+    language: python
+    expected: []   # benign, fully-tested change — noise/false-positive control
