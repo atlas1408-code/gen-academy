@@ -87,15 +87,37 @@ def _build_prompt(state: ReviewState) -> str:
             f"{e['kind']} {e['name']}()" for e in blob.get("enclosing", [])
         ) or "n/a"
         test = blob.get("matching_test") or "none"
+        test_state = ("exists" if blob.get("test_exists") else "MISSING")
+        untested = blob.get("untested_symbols", [])
         ctx_lines.append(
             f"- {path} [{blob.get('language')}]: enclosing={enclosing}; "
-            f"imports={blob.get('imports', [])}; matching_test_path={test}"
+            f"imports={blob.get('imports', [])}; "
+            f"matching_test_path={test} ({test_state}); "
+            f"untested_changed_symbols={untested}"
         )
     context_text = "\n".join(ctx_lines) if ctx_lines else "(no context)"
+
+    signals = state.get("static_signals", [])
+    if signals:
+        sig_text = "\n".join(
+            f"- {s['path']}:{s.get('line')} [{s.get('code')}] {s.get('message')}"
+            for s in signals
+        )
+        grounding = (
+            f"## Deterministic tool signals (ruff lint/SAST on the changed lines)\n"
+            f"{sig_text}\n\n"
+            "These are REAL tool results, not guesses. Use them to ground and "
+            "prioritize your review: corroborate them where they fall in your area, "
+            "and do not contradict them without a specific reason. Do not invent "
+            "issues that the code does not support.\n\n"
+        )
+    else:
+        grounding = ("## Deterministic tool signals\n(none on the changed lines)\n\n")
 
     return (
         f"Review the following pull request diff.\n\n"
         f"## Code context (per changed file)\n{context_text}\n\n"
+        f"{grounding}"
         f"## Unified diff\n```diff\n{state.get('diff', '')}\n```\n\n"
         f"{_SCHEMA_INSTRUCTIONS}"
     )

@@ -33,7 +33,7 @@ START → fetch_pr → build_context →┤  security  ├→ consolidate → ve
 ```
 
 - **fetch_pr** — parse the PR URL, fetch metadata + raw diff (REST), parse the diff into per-file hunks; retries 5xx/rate-limits, raises a clean error on 404/bad URL.
-- **build_context** — for each changed file, tree-sitter extracts the enclosing function/class, imports, and the conventional matching test path.
+- **build_context** — for each changed file, tree-sitter extracts the enclosing function/class and imports; **ruff** (lint + bugbear `B` + bandit-equivalent security `S` rules) runs on the changed lines for deterministic grounding; and a deterministic check confirms whether the matching test file exists and references the changed symbols. These signals are fed to the agents so findings are grounded in real tool output, not guesses.
 - **quality / security / test_gap** — run in parallel; each calls its model through a JSON-repair helper and either appends findings or marks itself *degraded* (never crashes).
 - **consolidate** — validates each finding's `in_hunk` against the hunks, dedupes by `(path, line, side)`, applies any refinements, severity-ranks, and persists.
 - **verify** — an independent verifier model (distinct from the agents) re-checks each finding against the diff, assigns a confidence, and **suppresses likely false positives** (kept visible, never posted). Fails open. Lifted eval precision 67% → 84% with recall unchanged.

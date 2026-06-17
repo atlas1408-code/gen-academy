@@ -1,17 +1,17 @@
-# Eval report — 2026-06-17 01:41 UTC
+# Eval report — 2026-06-17 01:56 UTC
 
-**PASS** · recall 100% · precision 84% · F1 91% · 1.0 false positives/PR
+**PASS** · recall 100% · precision 85% · F1 92% · 1.2 false positives/PR
 
 - models: Qwen/Qwen3-235B-A22B-Instruct-2507, deepseek-ai/DeepSeek-V3.2, meta-llama/Llama-3.3-70B-Instruct, moonshotai/Kimi-K2.6
 - judge: openai/gpt-oss-120b
-- findings judged: valid=21 invalid=4 uncertain=0
+- findings judged: valid=28 invalid=5 uncertain=0
 
 ## Thresholds
 | metric | value | target | |
 |---|---|---|---|
 | recall | 100% | ≥80% | ✅ |
-| precision | 84% | ≥70% | ✅ |
-| FP/PR | 1.0 | ≤3.0 | ✅ |
+| precision | 85% | ≥70% | ✅ |
+| FP/PR | 1.2 | ≤3.0 | ✅ |
 
 ## Recall by category
 | category | caught / expected |
@@ -23,24 +23,25 @@
 ## Precision by agent (raw)
 | agent | valid | invalid | uncertain | precision |
 |---|---|---|---|---|
-| quality | 15 | 4 | 0 | 79% |
-| security | 6 | 0 | 0 | 100% |
-| test_gap | 5 | 0 | 0 | 100% |
+| quality | 20 | 5 | 0 | 80% |
+| security | 13 | 0 | 0 | 100% |
+| test_gap | 9 | 0 | 0 | 100% |
 
 ## False-positive taxonomy
 | type | count |
 |---|---|
-| out_of_scope | 2 |
-| trivial | 2 |
+| out_of_scope | 3 |
+| trivial | 1 |
+| misread | 1 |
 
 ## Per-PR
 | PR | findings | valid | invalid | recall | degraded |
 |---|---|---|---|---|---|
-| security-sql-injection | 9 | 7 | 2 | 2/2 | — |
+| security-sql-injection | 12 | 10 | 2 | 2/2 | — |
 | quality-refactor | 8 | 8 | 0 | 4/4 | — |
-| test-gap | 8 | 6 | 2 | 1/1 | — |
+| test-gap | 13 | 10 | 3 | 1/1 | — |
 | clean-feature-control | 0 | 0 | 0 | — (control) | — |
 
 ## Cost (tokens)
-- agent tokens (this eval): 97383 (quality=74504, security=10828, test_gap=12051)
-- judge tokens: 32398
+- agent tokens (this eval): 132344 (quality=100622, security=15400, test_gap=16322)
+- judge tokens: 42963

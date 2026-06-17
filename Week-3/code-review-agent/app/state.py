@@ -45,6 +45,7 @@ class ReviewState(TypedDict, total=False):
     pr_meta: dict[str, Any]            # owner, repo, number, head_sha, title, ...
     hunks: dict[str, list[Hunk]]       # path -> hunks (for inline-postability checks)
     context: dict[str, Any]
+    static_signals: list[dict[str, Any]]  # deterministic ruff signals on changed lines
 
     findings: Annotated[list[Finding], operator.add]   # raw union from all agents
     degraded_agents: Annotated[list[str], operator.add]

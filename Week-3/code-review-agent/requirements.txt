@@ -8,6 +8,7 @@ fastapi
 uvicorn
 tree-sitter
 tree-sitter-python
+ruff
 python-dotenv
 httpx
 pyyaml
