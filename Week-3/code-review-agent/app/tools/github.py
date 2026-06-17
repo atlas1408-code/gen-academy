@@ -148,11 +148,50 @@ def fetch_pr(pr_url: str) -> tuple[dict, str]:
         "repo": repo,
         "number": number,
         "title": meta.get("title"),
+        "body": meta.get("body") or "",
         "head_sha": meta.get("head", {}).get("sha"),
         "base_sha": meta.get("base", {}).get("sha"),
         "state": meta.get("state"),
     }
     return pr_meta, diff_resp.text
+
+
+_LINK_RE = re.compile(
+    r"\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s+#(\d+)", re.IGNORECASE
+)
+
+
+def parse_linked_issues(text: str) -> list[int]:
+    """Extract issue numbers from 'fixes #12' / 'closes #7' style references."""
+    seen: list[int] = []
+    for m in _LINK_RE.finditer(text or ""):
+        n = int(m.group(1))
+        if n not in seen:
+            seen.append(n)
+    return seen
+
+
+def fetch_issue(owner: str, repo: str, number: int) -> dict | None:
+    """Fetch a linked issue's title/body, or None if unavailable."""
+    url = f"{API_ROOT}/repos/{owner}/{repo}/issues/{number}"
+    with httpx.Client(timeout=30.0, follow_redirects=True) as client:
+        try:
+            resp = _get(client, url, "application/vnd.github+json")
+        except GitHubError:
+            return None
+    d = resp.json()
+    return {"number": number, "title": d.get("title"), "body": d.get("body") or ""}
+
+
+def fetch_tree(owner: str, repo: str, ref: str) -> list[str]:
+    """Return all blob (file) paths in the repo at a ref, or [] on failure."""
+    url = f"{API_ROOT}/repos/{owner}/{repo}/git/trees/{ref}?recursive=1"
+    with httpx.Client(timeout=30.0, follow_redirects=True) as client:
+        try:
+            resp = _get(client, url, "application/vnd.github+json")
+        except GitHubError:
+            return []
+    return [t["path"] for t in resp.json().get("tree", []) if t.get("type") == "blob"]
 
 
 def fetch_file_at(owner: str, repo: str, path: str, ref: str) -> str | None:

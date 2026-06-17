@@ -79,6 +79,20 @@ prs:
         description: "New public functions (reading_time_minutes/note_stats) ship with no matching test file."
         keywords: ["test", "coverage", "untested", "no test"]
 
+  - name: breaking-signature-callers
+    url: https://github.com/atlas1408-code/eval-target-repo/pull/5
+    language: python
+    expected:
+      # ONLY catchable with cross-file (repo-aware) context — the function looks
+      # fine in isolation; the bug is that positional callers weren't updated.
+      - id: B1-broken-callers
+        category: quality
+        severity: high
+        path: app/notes.py
+        lines: [15, 15]
+        description: "Reordering create_note's parameters to (title, owner, body) silently breaks existing positional call sites (e.g. in tests/test_notes.py) that were not updated — owner and title get swapped."
+        keywords: ["caller", "call site", "call sites", "callers", "signature", "parameter order", "argument order", "positional", "swap", "breaks", "break existing", "not updated"]
+
   - name: clean-feature-control
     url: https://github.com/atlas1408-code/eval-target-repo/pull/4
     language: python

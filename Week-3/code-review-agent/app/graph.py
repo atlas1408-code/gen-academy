@@ -1,7 +1,7 @@
 """Graph assembly for the code review agent.
 
 Topology:
-    START -> fetch_pr -> build_context -> {quality, security, test_gap}
+    START -> fetch_pr -> build_context -> repo_context -> {quality, security, test_gap}
           -> consolidate -> verify -> human_gate --(approve)--> post_comments -> END
                                                   --(else)----> END
 
@@ -18,9 +18,11 @@ from langgraph.types import Command
 from app.nodes.agents import make_agent_node
 from app.nodes.build_context import build_context
 from app.nodes.consolidate import consolidate
+from app.nodes.deterministic import deterministic_findings
 from app.nodes.fetch_pr import fetch_pr
 from app.nodes.human_gate import human_gate, route_after_gate
 from app.nodes.post_comments import post_comments
+from app.nodes.repo_context import repo_context
 from app.nodes.verify import verify
 from app.state import ReviewState
 
@@ -32,6 +34,8 @@ def build_graph(checkpointer=None):
 
     g.add_node("fetch_pr", fetch_pr)
     g.add_node("build_context", build_context)
+    g.add_node("repo_context", repo_context)
+    g.add_node("deterministic", deterministic_findings)
     for name in AGENTS:
         g.add_node(name, make_agent_node(name))
     g.add_node("consolidate", consolidate)
@@ -41,10 +45,13 @@ def build_graph(checkpointer=None):
 
     g.add_edge(START, "fetch_pr")
     g.add_edge("fetch_pr", "build_context")
-    # Fan out to the three specialists in parallel...
+    g.add_edge("build_context", "repo_context")
+    # Fan out to the three specialists + the deterministic branch in parallel...
+    g.add_edge("repo_context", "deterministic")
+    g.add_edge("deterministic", "consolidate")
     for name in AGENTS:
-        g.add_edge("build_context", name)
-        # ...and fan in: consolidate waits for all three.
+        g.add_edge("repo_context", name)
+        # ...and fan in: consolidate waits for all of them.
         g.add_edge(name, "consolidate")
     g.add_edge("consolidate", "verify")
     g.add_edge("verify", "human_gate")

@@ -1,17 +1,31 @@
 [
   {
     "pr": "security-sql-injection",
+    "agent": "test_gap",
+    "path": "app/search.py",
+    "line": 11,
+    "severity": "medium",
+    "title": "Missing test coverage for new code",
+    "problem": "app/search.py adds/changes search_notes, export_notes but has no matching test file (tests/test_search.py).",
+    "suggestion": "Add tests in tests/test_search.py covering search_notes, export_notes.",
+    "verdict": "invalid",
+    "fp_type": "out_of_scope",
+    "matched_known_id": null,
+    "judge_rationale": "The finding asserts that there are no tests for the new functions, but the diff does not include any test files, so we cannot verify the absence of tests. Moreover, the comment is a generic suggestion about test coverage rather than a concrete issue in the code itself, making it a stylistic/nitpick comment outside the scope of the diff's functional changes."
+  },
+  {
+    "pr": "security-sql-injection",
     "agent": "quality+security",
     "path": "app/search.py",
     "line": 5,
     "severity": "critical",
     "title": "Hardcoded API secret in source code",
-    "problem": "The helper _row_to_dict is private to app.notes, so importing it creates a fragile dependency on implementation details that may change without warning. | Importing _row_to_dict from app.notes couples this module to an internal implementation detail that is not part of the public API, making future refactors error-prone. | Importing `_row_to_dict` relies on an internal implementation detail of `app.notes`, creating tight coupling that can break if the helper is renamed or removed. | The EXPORT_API_TOKEN is hardcoded as a string literal, exposing a live secret key in the codebase. This allows anyone with access to the code to impersonate the application to the analytics service.",
+    "problem": "The helper _row_to_dict is private to app.notes, so importing it creates a fragile dependency on implementation details that may change without warning. | Importing _row_to_dict from app.notes couples this module to an internal implementation detail that is not part of the public API, making future refactors error-prone. | Importing `_row_to_dict` relies on an internal implementation detail of `app.notes`, creating tight coupling that can break if the helper is renamed or removed. | The EXPORT_API_TOKEN is hardcoded as a string literal, exposing a live secret key in the codebase. This allows anyone with access to the code to impersonate the application to the analytics service. | Importing `_row_to_dict` from `app.notes` relies on an internal implementation detail that may change without notice, violating encapsulation. | The helper _row_to_dict is prefixed with an underscore, signaling it is private to app.notes. Importing private symbols couples this module to implementation details that can change without warning. | The helper _row_to_dict is imported from app.notes, but its leading underscore marks it as private to that module. Depending on private internals couples the modules tightly and breaks encapsulation, making future refactors risky. | The EXPORT_API_TOKEN is hardcoded in the source code, exposing a live secret key that could be used to impersonate the service. | Depending on an underscore-prefixed helper couples this module to the internal implementation of app.notes and breaks encapsulation. | The EXPORT_API_TOKEN is hardcoded as a live secret in the source code, exposing credentials to anyone with repository access.",
     "suggestion": "Move the secret to an environment variable or secure configuration service. Example: `EXPORT_API_TOKEN = os.getenv(\"EXPORT_API_TOKEN\")`",
     "verdict": "valid",
     "fp_type": null,
     "matched_known_id": "S2-hardcoded-secret",
-    "judge_rationale": "The diff introduces a hard\u2011coded API token (EXPORT_API_TOKEN) on line 8, which is a clear security issue matching the known S2-hardcoded-secret finding. The suggestion to move the secret to an environment variable is appropriate. Although the finding also mentions importing a private helper, the primary issue (hard\u2011coded secret) is present and actionable, making the overall comment valid."
+    "judge_rationale": "The added file defines `EXPORT_API_TOKEN` as a literal string, exposing a live secret in source code. This matches the known hardcoded\u2011secret issue (S2). The finding correctly flags the secret, even though the reported line number is inaccurate and it also mentions a private import, which is a separate concern but does not invalidate the core issue."
   },
   {
     "pr": "security-sql-injection",
@@ -20,12 +34,12 @@
     "line": 8,
     "severity": "critical",
     "title": "",
-    "problem": "The EXPORT_API_TOKEN is hardcoded in source code, exposing live credentials that could be used to impersonate the application to external services. | Embedding the export token directly in source code reduces flexibility across environments and forces a code change to rotate values. | The EXPORT_API_TOKEN is hardcoded in the source code, exposing sensitive credentials that could be leaked through version control or public repositories. | Embedding the export token as a literal makes environment-specific configuration impossible and forces code changes when the token rotates. | The EXPORT_API_TOKEN is hardcoded, which is a security risk as it can be exposed to unauthorized users. This token should be kept secret to prevent unauthorized access to the analytics service.",
+    "problem": "The EXPORT_API_TOKEN is hardcoded in source code, exposing live credentials that could be used to impersonate the application to external services. | Embedding the export token directly in source code reduces flexibility across environments and forces a code change to rotate values. | The EXPORT_API_TOKEN is hardcoded in the source code, exposing sensitive credentials that could be leaked through version control or public repositories. | Embedding the export token as a literal makes environment-specific configuration impossible and forces code changes when the token rotates. | The EXPORT_API_TOKEN is hardcoded, which is a security risk as it can be exposed to unauthorized users. This token should be kept secret to prevent unauthorized access to the analytics service. | The analytics API token is hardcoded as a module constant, making environment-specific rotation difficult and increasing maintenance overhead. | The EXPORT_API_TOKEN is hardcoded as a live secret in the source code, exposing it to anyone with repository access and making rotation impossible. | The EXPORT_API_TOKEN is hardcoded, which is a security risk as it can be accessed by unauthorized users. This can lead to unauthorized access to the analytics service. | The EXPORT_API_TOKEN is hardcoded in the source code, which allows anyone with access to the code to impersonate the application to the analytics service. | The EXPORT_API_TOKEN is hardcoded in the code, which is a security risk. If the code is exposed, the token will be compromised.",
     "suggestion": "",
     "verdict": "valid",
     "fp_type": null,
     "matched_known_id": "S2-hardcoded-secret",
-    "judge_rationale": "The diff adds a line defining EXPORT_API_TOKEN with a literal value, which is a hard\u2011coded secret. This matches the known security issue S2-hardcoded-secret and is an actionable problem that should be addressed (e.g., by loading the token from environment variables or a secret manager)."
+    "judge_rationale": "The diff defines EXPORT_API_TOKEN as a literal string containing what appears to be a live API token. Hard\u2011coding secrets in source code is a security vulnerability because it can be exposed via version control and makes rotation difficult. This matches the known issue S2-hardcoded-secret."
   },
   {
     "pr": "security-sql-injection",
@@ -34,12 +48,12 @@
     "line": 28,
     "severity": "critical",
     "title": "Hardcoded API Token",
-    "problem": "str(notes) produces a Python literal representation, which is an unconventional and unreliable serialization format for external HTTP APIs. | The EXPORT_API_TOKEN is hardcoded in the export_notes function, which is a significant security risk as it could be exposed to unauthorized parties. | Using str() on a list of dictionaries produces a Python repr, which is not a standard interchange format and will likely confuse the receiving service. | Calling str() on a list of dicts yields a Python repr, not valid JSON, which is likely to be rejected or mis-parsed by the analytics endpoint.",
+    "problem": "str(notes) produces a Python literal representation, which is an unconventional and unreliable serialization format for external HTTP APIs. | The EXPORT_API_TOKEN is hardcoded in the export_notes function, which is a significant security risk as it could be exposed to unauthorized parties. | Using str() on a list of dictionaries produces a Python repr, which is not a standard interchange format and will likely confuse the receiving service. | Calling str() on a list of dicts yields a Python repr, not valid JSON, which is likely to be rejected or mis-parsed by the analytics endpoint. | Encoding `str(notes)` sends a Python repr string to the endpoint, which is fragile and unlikely to be parsed correctly by standard consumers. | Calling str() on a list of dictionaries produces a Python repr, not a standard serialization format like JSON. This makes the payload unpredictable and hard for the analytics endpoint to parse. | Encoding the notes list with str() produces a Python repr string rather than a standard interchange format. This is fragile, unexpected for API consumers, and hard to maintain. | Calling str() on a list of dicts yields a Python repr string, which is not a standard wire format and will likely cause parsing failures at the analytics endpoint.",
     "suggestion": "Store the API token securely, such as in an environment variable, and then retrieve it in the function, e.g., EXPORT_API_TOKEN = os.environ['EXPORT_API_TOKEN']",
     "verdict": "valid",
     "fp_type": null,
-    "matched_known_id": "S2",
-    "judge_rationale": "The diff defines EXPORT_API_TOKEN as a literal string in source code, which is a hard\u2011coded secret and matches the known security issue S2-hardcoded-secret. The finding correctly identifies this problem and suggests using an environment variable. Although the reported line number (28) points to the usage site rather than the definition, the issue is still present and actionable."
+    "matched_known_id": "S2-hardcoded-secret",
+    "judge_rationale": "The diff defines EXPORT_API_TOKEN as a literal string in the module, which is a hard\u2011coded secret and a security risk. The finding correctly flags a hardcoded API token, matching known issue S2-hardcoded-secret, even though it incorrectly states the token is inside export_notes. The core issue is actionable, so the finding is valid."
   },
   {
     "pr": "security-sql-injection",
@@ -53,7 +67,7 @@
     "verdict": "valid",
     "fp_type": null,
     "matched_known_id": "S1-sql-injection",
-    "judge_rationale": "The diff shows that both `owner` and `term` are interpolated directly into the SQL query via f-strings, creating a classic SQL injection vulnerability. This matches the known issue S1-sql-injection. The reported location is slightly off (line 15 is a comment), but the problem is present and actionable."
+    "judge_rationale": "The `search_notes` function constructs the SQL query by directly embedding the user\u2011supplied `owner` and `term` values via f\u2011strings, creating a classic SQL injection vulnerability. This aligns with the known issue S1-sql-injection."
   },
   {
     "pr": "security-sql-injection",
@@ -67,7 +81,7 @@
     "verdict": "valid",
     "fp_type": null,
     "matched_known_id": "S1-sql-injection",
-    "judge_rationale": "The diff shows that the `owner` parameter is inserted into the SQL query via an f\u2011string (line 17), which allows an attacker to inject arbitrary SQL. This matches the known security issue S1-sql-injection and is an actionable vulnerability."
+    "judge_rationale": "The diff shows that the `owner` argument is inserted directly into the SQL query via an f\u2011string (line 14\u201116). This creates a classic SQL injection vector, matching the known issue S1-sql-injection. The finding is therefore accurate and actionable."
   },
   {
     "pr": "security-sql-injection",
@@ -76,12 +90,12 @@
     "line": 16,
     "severity": "critical",
     "title": "SQL query built with inline string formatting",
-    "problem": "Interpolating variables directly into SQL is brittle and error-prone; it breaks on quotes and makes the query harder to read and maintain. | The `owner` and `term` parameters are directly interpolated into the SQL query string, enabling SQL injection attacks. An attacker could manipulate these inputs to execute arbitrary SQL commands. | The query string is built with user-supplied input, making it vulnerable to SQL injection attacks. This can lead to unauthorized data access or modification.",
+    "problem": "Interpolating variables directly into SQL is brittle and error-prone; it breaks on quotes and makes the query harder to read and maintain. | The `owner` and `term` parameters are directly interpolated into the SQL query string, enabling SQL injection attacks. An attacker could manipulate these inputs to execute arbitrary SQL commands. | The query string is built with user-supplied input, making it vulnerable to SQL injection attacks. This can lead to unauthorized data access or modification. | Inlining variables into the SQL query with f-strings makes the search brittle and prevents the database driver from handling proper parameter binding and type conversion. | The `owner` and `term` parameters are directly interpolated into the SQL query string, allowing an attacker to execute arbitrary SQL commands. | The query string is built with user-supplied input, making it vulnerable to SQL injection attacks. This can lead to unauthorized access to the database. | Constructing SQL by interpolating variables with f-strings makes the query brittle, hard to read, and difficult to maintain. Parameterized queries are the standard pattern for dynamic SQL. | The `owner` and `term` parameters are directly interpolated into the SQL query string, enabling SQL injection attacks. | The search_notes function is vulnerable to SQL injection because it directly inserts user-supplied input into the query string. This could allow an attacker to execute arbitrary SQL code and access or modify sensitive data. | Interpolating owner and term directly into the SQL string is brittle and places the escaping burden on the caller. It also prevents the database driver from reusing query plans. | The `owner` and `term` parameters are directly interpolated into the SQL query string, allowing an attacker to inject arbitrary SQL commands. | The `owner` and `term` parameters are directly interpolated into the SQL query string, allowing an attacker to inject arbitrary SQL.",
     "suggestion": "Use bound parameters: `query = \"SELECT id, owner, title, body FROM notes WHERE owner = ? AND (title LIKE ? OR body LIKE ?) ORDER BY id\"; rows = conn.execute(query, (owner, f\"%{term}%\", f\"%{term}%\")).fetchall()`.",
     "verdict": "valid",
     "fp_type": null,
     "matched_known_id": "S1-sql-injection",
-    "judge_rationale": "The diff shows that `search_notes` constructs its SQL query using f-strings that directly embed the user\u2011supplied `owner` and `term` values. This creates a classic SQL injection vulnerability, exactly as described in the known issue S1-sql-injection. The suggested fix to use bound parameters is appropriate and actionable."
+    "judge_rationale": "The diff shows that `search_notes` constructs its SQL query using f-strings that directly embed the `owner` and `term` parameters, which matches the known critical SQL injection issue (S1). This is an actionable security problem; the suggested fix to use bound parameters is appropriate."
   },
   {
     "pr": "security-sql-injection",
@@ -95,21 +109,21 @@
     "verdict": "valid",
     "fp_type": null,
     "matched_known_id": "S1-sql-injection",
-    "judge_rationale": "The diff shows `search_notes` constructing an SQL query with f\u2011strings that embed the user\u2011supplied `owner` and `term` directly into the statement. This creates a classic SQL injection vulnerability and also makes the query brittle with special characters. The issue is present in the code and matches the known security issue S1-sql-injection."
+    "judge_rationale": "The diff shows that `search_notes` builds its SQL query by directly interpolating the user\u2011supplied `owner` and `term` values into an f\u2011string, which is a classic SQL injection vulnerability. This matches the known issue S1-sql-injection and is an actionable security problem."
   },
   {
     "pr": "security-sql-injection",
-    "agent": "quality+security",
+    "agent": "quality+security+test_gap",
     "path": "app/search.py",
     "line": 34,
     "severity": "high",
     "title": "Network call lacks timeout and error handling",
-    "problem": "urllib.request.urlopen without a timeout can block indefinitely, and unhandled exceptions such as URLError or HTTPError leak low-level implementation details to callers. | The urlopen call has no timeout and lets low-level network exceptions propagate uncaught, making the function unpredictable under network degradation. | urllib.request.urlopen can hang indefinitely or raise unhandled exceptions on network failure, giving callers no actionable feedback. | `urllib.request.urlopen` is called without a timeout, which can lead to denial-of-service if the external endpoint is slow or unresponsive, hanging the application thread.",
+    "problem": "urllib.request.urlopen without a timeout can block indefinitely, and unhandled exceptions such as URLError or HTTPError leak low-level implementation details to callers. | The urlopen call has no timeout and lets low-level network exceptions propagate uncaught, making the function unpredictable under network degradation. | urllib.request.urlopen can hang indefinitely or raise unhandled exceptions on network failure, giving callers no actionable feedback. | `urllib.request.urlopen` is called without a timeout, which can lead to denial-of-service if the external endpoint is slow or unresponsive, hanging the application thread. | `urllib.request.urlopen` can raise `URLError` or `HTTPError` on network failures or non-2xx responses, causing unhandled exceptions to propagate to callers. | All of a user's notes are serialized and sent to an external analytics endpoint, which could lead to unauthorized data exposure if the endpoint is compromised or misconfigured. | The URL open function allows the use of custom schemes, which can be a security risk. This can lead to unexpected behavior or security vulnerabilities. | urllib.request.urlopen raises exceptions for network failures and HTTP error codes, yet these are unhandled. The docstring promises a returned status, but callers will face uncaught exceptions instead. | `urllib.request.urlopen` is called without restricting allowed URL schemes (like `file:`), which could lead to local file disclosure or other unintended accesses. | urllib.request.urlopen raises exceptions on network failures, unreachable hosts, or HTTP error responses. The function promises to return an int status, but callers receive uncaught low-level exceptions instead, making the API unpredictable. | The `endpoint` parameter could be a `file:` URL, allowing the reading of local files and exposing sensitive data. | The urllib.request.urlopen call has no timeout, so a slow endpoint can hang the process forever, and network failures raise uncaught exceptions. | The `notes` list is converted to a string and sent as payload. If the notes contain sensitive data, this could expose it to an external endpoint.",
     "suggestion": "Add a timeout (e.g., urlopen(req, timeout=30)) and wrap the call in a try/except block to handle network errors gracefully, returning a sensible default or raising a domain-specific exception.",
     "verdict": "valid",
     "fp_type": null,
     "matched_known_id": null,
-    "judge_rationale": "The diff shows that `export_notes` calls `urllib.request.urlopen(req)` without specifying a timeout and without any try/except handling. This can cause the call to block indefinitely on a slow or unresponsive endpoint and propagate low\u2011level network exceptions to callers. Adding a timeout and handling `URLError`, `HTTPError`, etc., would make the function more robust, so the finding is a real, actionable issue."
+    "judge_rationale": "The `export_notes` function calls `urllib.request.urlopen(req)` without specifying a timeout and without any try/except handling. This can cause the call to block indefinitely if the remote endpoint is slow or unresponsive, and any network\u2011related exceptions (e.g., URLError, HTTPError) will propagate uncaught, violating the function's contract of returning an int status. Adding a timeout and proper error handling is an actionable improvement."
   },
   {
     "pr": "security-sql-injection",
@@ -123,7 +137,7 @@
     "verdict": "valid",
     "fp_type": null,
     "matched_known_id": null,
-    "judge_rationale": "The `export_notes` function receives an `endpoint` argument from the caller and passes it directly to `urllib.request.urlopen` without any validation or restriction. If the caller can control this value, an attacker could supply an internal URL (e.g., http://169.254.169.254) and cause the service to make arbitrary outbound requests, constituting a Server\u2011Side Request Forgery (SSRF) vulnerability. Additionally, the function lacks any try/except handling around the network call, so network errors or non\u20112xx responses would raise uncaught exceptions. Both points are actionable security concerns not covered by the known issues list."
+    "judge_rationale": "The `export_notes` function accepts an `endpoint` argument and passes it directly to `urllib.request.urlopen` without any validation or sanitization, which can enable Server\u2011Side Request Forgery (SSRF) if the caller supplies a malicious URL. Additionally, the function does not catch network\u2011related exceptions (e.g., `URLError`, `HTTPError`), so failures will propagate as uncaught exceptions. Both points are real, actionable security concerns present in the diff."
   },
   {
     "pr": "security-sql-injection",
@@ -132,12 +146,12 @@
     "line": 29,
     "severity": "high",
     "title": "Server-Side Request Forgery (SSRF) risk",
-    "problem": "The `endpoint` parameter is passed directly to `urllib.request.Request` without validation, allowing potential SSRF attacks. An attacker could supply a `file://` URL or internal service endpoint to read local files or probe internal networks. | The urllib.request.urlopen function may allow the use of insecure URL schemes, which can lead to security vulnerabilities. It is recommended to only allow secure schemes like https.",
+    "problem": "The `endpoint` parameter is passed directly to `urllib.request.Request` without validation, allowing potential SSRF attacks. An attacker could supply a `file://` URL or internal service endpoint to read local files or probe internal networks. | The urllib.request.urlopen function may allow the use of insecure URL schemes, which can lead to security vulnerabilities. It is recommended to only allow secure schemes like https. | The `endpoint` parameter is passed directly to `urllib.request.urlopen` without validation, enabling Server-Side Request Forgery (SSRF) attacks against internal services. | The URL open function allows the use of custom schemes, which can be a security risk. This can lead to unexpected behavior or security vulnerabilities. | The `endpoint` parameter is passed directly to `urllib.request.Request` without validation, allowing potential SSRF attacks to internal services. | The export_notes function uses urllib.request.urlopen without validating the URL scheme, which could lead to unexpected behavior or security issues. | The `endpoint` parameter is passed directly to `urllib.request.urlopen`, allowing an attacker to make requests to internal network services.",
     "suggestion": "Validate the `endpoint` URL scheme and host against an allowlist of permitted destinations before making the request. Example: `from urllib.parse import urlparse; parsed = urlparse(endpoint); if parsed.scheme not in [\"https\"] or parsed.hostname not in ALLOWED_HOSTS: raise ValueError(\"Invalid endpoint\")`",
     "verdict": "valid",
     "fp_type": null,
     "matched_known_id": null,
-    "judge_rationale": "The `export_notes` function forwards the caller\u2011provided `endpoint` directly to `urllib.request.Request` and `urllib.request.urlopen` without any validation. An attacker who can influence the `endpoint` argument could supply a malicious URL (e.g., `file://` or an internal service address), leading to a Server\u2011Side Request Forgery (SSRF) vulnerability. The suggested mitigation\u2014validating the URL scheme and host against an allowlist\u2014is appropriate and actionable."
+    "judge_rationale": "The `export_notes` function directly forwards the caller\u2011provided `endpoint` string to `urllib.request.Request` and `urllib.request.urlopen` without any validation or allow\u2011list checks. This permits an attacker to supply arbitrary URLs (e.g., file://, internal service addresses) leading to a potential Server\u2011Side Request Forgery (SSRF) vulnerability. The issue is present in the diff and is actionable (e.g., enforce HTTPS scheme and restrict hosts)."
   },
   {
     "pr": "security-sql-injection",
@@ -146,12 +160,12 @@
     "line": 27,
     "severity": "medium",
     "title": "",
-    "problem": "Calling search_notes(owner, '') relies on the implicit behavior that LIKE '%%' matches every row, which is a non-obvious workaround rather than an explicit intent.",
+    "problem": "Calling search_notes(owner, '') relies on the implicit behavior that LIKE '%%' matches every row, which is a non-obvious workaround rather than an explicit intent. | Passing an empty term to `search_notes` to retrieve every note is non-obvious and fragile, depending on `LIKE '%%'` side effects.",
     "suggestion": "",
     "verdict": "invalid",
     "fp_type": "out_of_scope",
     "matched_known_id": null,
-    "judge_rationale": "The comment points out that `export_notes` calls `search_notes` with an empty string to rely on the SQL `LIKE '%%'` pattern matching all rows. While this may be a non\u2011obvious design choice, it does not constitute a bug, security issue, or functional defect in the diff. It is merely a stylistic or clarity suggestion, which is outside the scope of actionable code review findings for this PR."
+    "judge_rationale": "The code calls `search_notes(owner, \"\")` which results in a SQL `LIKE '%%'` condition that matches all rows. While this is a non\u2011obvious way to retrieve all notes, it is not a functional bug, security issue, or correctness problem. It is a stylistic or design choice rather than an actionable defect, and the finding does not correspond to any known issue in the diff."
   },
   {
     "pr": "security-sql-injection",
@@ -165,35 +179,35 @@
     "verdict": "invalid",
     "fp_type": "out_of_scope",
     "matched_known_id": null,
-    "judge_rationale": "The code intentionally calls `search_notes` with an empty term to retrieve all notes for the given owner. This behavior relies on SQL LIKE semantics and is a functional design choice, not a bug or security issue. Suggesting a separate helper for readability is a stylistic preference and does not constitute an actionable defect in the diff."
+    "judge_rationale": "The code intentionally calls `search_notes` with an empty term to retrieve all notes for the owner. This is a valid use of the existing function and not a bug; the suggestion to add a separate helper is a stylistic refactor, not an actionable issue grounded in the diff."
   },
   {
     "pr": "quality-refactor",
-    "agent": "quality+security",
-    "path": "app/digest.py",
-    "line": 22,
-    "severity": "high",
-    "title": "Bare except clause hides exceptions",
-    "problem": "The bare except: catches all exceptions including KeyboardInterrupt and SystemExit, and silently swallows them. It also masks programming errors (e.g., if notes is None) rather than fixing the root cause. | A bare except: catches SystemExit, KeyboardInterrupt, and unexpected errors, making debugging difficult and masking potential bugs in list_notes or its return value. | A bare `except:` catches SystemExit, KeyboardInterrupt, and unexpected errors, making debugging difficult. Silently falling back to zero obscures real failures from `list_notes`. | A bare `except:` catches all exceptions, including KeyboardInterrupt and SystemExit, which can interfere with normal process termination and hide unexpected errors.",
-    "suggestion": "Remove the try/except. If `notes` might be `None`, guard explicitly with `notes = notes or []` before calling `len(notes)`.",
-    "verdict": "valid",
-    "fp_type": null,
-    "matched_known_id": "Q4-bare-except",
-    "judge_rationale": "The diff contains a bare `except:` block around `len(notes)`. This catches all exceptions, including KeyboardInterrupt, SystemExit, and any unexpected errors, masking bugs and interfering with proper termination. The issue is present at the indicated location and matches the known issue Q4-bare-except, making the finding accurate and actionable."
-  },
-  {
-    "pr": "quality-refactor",
-    "agent": "quality+security",
+    "agent": "quality+security+test_gap",
     "path": "app/digest.py",
     "line": 5,
     "severity": "high",
     "title": "Mutable default argument for tags",
-    "problem": "Using a mutable list ([]) as the default value for tags causes the list to persist across function calls. Because the function also mutates this list with tags.append(), subsequent calls that omit the tags parameter will incorrectly accumulate 'generated' strings. | Using tags=[] as a default creates shared mutable state across calls. Additionally, tags.append(\"generated\") modifies the caller's list in-place, causing unexpected side effects. | Using a mutable list as a default argument causes 'generated' to accumulate across calls. The function also mutates any caller-provided list as a side effect. | Using a mutable list `tags=[]` as a default argument can lead to unexpected behavior and data leakage across function calls, as the same list object is reused.",
+    "problem": "Using a mutable list ([]) as the default value for tags causes the list to persist across function calls. Because the function also mutates this list with tags.append(), subsequent calls that omit the tags parameter will incorrectly accumulate 'generated' strings. | Using tags=[] as a default creates shared mutable state across calls. Additionally, tags.append(\"generated\") modifies the caller's list in-place, causing unexpected side effects. | Using a mutable list as a default argument causes 'generated' to accumulate across calls. The function also mutates any caller-provided list as a side effect. | Using a mutable list `tags=[]` as a default argument can lead to unexpected behavior and data leakage across function calls, as the same list object is reused. | tags=[] creates a shared list across function calls, and tags.append('generated') mutates the caller's list, causing persistent side effects between invocations. | The function build_digest uses a mutable data structure as a default argument, which can lead to unexpected behavior. This is because default arguments are only evaluated once at the point of function definition in the defining scope, so if you use a mutable default argument and mutate it, you will and have mutated that object for all future calls to the function as well. | Using a mutable list as a default argument causes the list to be shared across function calls, leading to accumulated 'generated' tags and unexpected behavior. | The function uses a mutable data structure as a default argument, which can lead to unexpected behavior. This is because default arguments are only evaluated once at the point of function definition in the defining scope, so if you use a mutable default argument and mutate it, you will and have mutated that object for all future calls to the function as well. | Using a mutable list as the default value for `tags` causes the default list to be shared and mutated across function calls. The function also mutates the caller's list by appending \"generated\". | app/digest.py adds/changes build_digest but has no matching test file (tests/test_digest.py). | Using a mutable list as a default argument causes the list to persist across function calls, so \"generated\" accumulates on every invocation and leaks state between callers.",
     "suggestion": "Change the signature to tags=None, then initialize with tags = list(tags) if tags is not None else [] at the top of the function.",
     "verdict": "valid",
     "fp_type": null,
     "matched_known_id": "Q1-mutable-default",
-    "judge_rationale": "The function `build_digest` is defined with a default argument `tags=[]`, which is a mutable list. The function mutates this list with `tags.append(\"generated\")`. Because default arguments are evaluated only once at function definition time, the same list instance is shared across all calls that omit the `tags` argument, leading to unintended accumulation of \"generated\" entries and side\u2011effects on caller\u2011provided lists. This is a concrete, actionable defect present in the diff."
+    "judge_rationale": "The function `build_digest` is defined with a default argument `tags=[]`, which is a mutable list. The code mutates this list with `tags.append(\"generated\")`, causing the default list to be shared across calls and leading to unintended state leakage. This matches the known issue Q1-mutable-default."
+  },
+  {
+    "pr": "quality-refactor",
+    "agent": "quality+security+test_gap",
+    "path": "app/digest.py",
+    "line": 22,
+    "severity": "high",
+    "title": "Bare except clause hides exceptions",
+    "problem": "The bare except: catches all exceptions including KeyboardInterrupt and SystemExit, and silently swallows them. It also masks programming errors (e.g., if notes is None) rather than fixing the root cause. | A bare except: catches SystemExit, KeyboardInterrupt, and unexpected errors, making debugging difficult and masking potential bugs in list_notes or its return value. | A bare `except:` catches SystemExit, KeyboardInterrupt, and unexpected errors, making debugging difficult. Silently falling back to zero obscures real failures from `list_notes`. | A bare `except:` catches all exceptions, including KeyboardInterrupt and SystemExit, which can interfere with normal process termination and hide unexpected errors. | except: catches BaseException including system-level exceptions and masks programming errors like notes being an unexpected type. | A bare `except:` catches all exceptions, including KeyboardInterrupt or SystemExit, which can mask unexpected errors and make debugging difficult. | The function build_digest uses a bare except clause, which can catch and hide unexpected exceptions, making it harder to debug. It's better to catch specific exceptions that you can handle. | A bare `except:` catches SystemExit, KeyboardInterrupt, and all programming errors, making debugging difficult and hiding real failures. | A bare `except:` catches all exceptions, including KeyboardInterrupt and SystemExit, which can mask errors and make debugging difficult. | The function uses a bare `except` clause, which can catch and hide unexpected exceptions, making it harder to debug. It's better to catch specific exceptions that you can handle. | The bare `except:` catches all exceptions including system-level ones and silently swallows errors, masking bugs and making debugging difficult. | A bare `except:` catches all exceptions, including KeyboardInterrupt and SystemExit, which can mask errors and interfere with program termination. | A bare `except:` catches all exceptions including `KeyboardInterrupt` and `SystemExit`, and silently hides programming errors when computing `len(notes)`. | A bare `except:` catches all exceptions, including KeyboardInterrupt and SystemExit, which can mask unexpected errors and make debugging difficult.",
+    "suggestion": "Remove the try/except. If `notes` might be `None`, guard explicitly with `notes = notes or []` before calling `len(notes)`.",
+    "verdict": "valid",
+    "fp_type": null,
+    "matched_known_id": "Q4-bare-except",
+    "judge_rationale": "The diff contains a bare `except:` block at line 22 that catches all exceptions, including system\u2011level ones, and silently sets `count` to 0. This matches the known issue Q4-bare-except and is an actionable problem that should be addressed by catching specific exceptions or guarding the value before calling `len`."
   },
   {
     "pr": "quality-refactor",
@@ -202,12 +216,12 @@
     "line": 28,
     "severity": "medium",
     "title": "",
-    "problem": "Lines after return header + \"\\nNo notes yet.\" are unreachable. The lines.append(\"END\") and subsequent return will never execute, confusing readers and cluttering the function. | The lines.append(\"END\") and return on lines 28-29 follow an unconditional return on line 26 and will never execute, confusing maintainers. | The `return` two lines above makes `lines.append('END')` and the second `return` unreachable, creating confusion about the intended control flow and output format.",
+    "problem": "Lines after return header + \"\\nNo notes yet.\" are unreachable. The lines.append(\"END\") and subsequent return will never execute, confusing readers and cluttering the function. | The lines.append(\"END\") and return on lines 28-29 follow an unconditional return on line 26 and will never execute, confusing maintainers. | The `return` two lines above makes `lines.append('END')` and the second `return` unreachable, creating confusion about the intended control flow and output format. | Lines after the unconditional `return` on line 27 are never executed, creating confusion and maintenance burden. | The `lines.append(\"END\")` and second `return` following `return header + \"\\nNo notes yet.\"` are unreachable, creating confusion and maintenance debt.",
     "suggestion": "",
     "verdict": "valid",
     "fp_type": null,
     "matched_known_id": "Q3-dead-code",
-    "judge_rationale": "The function returns early when `count == 0` with `return header + \"\\nNo notes yet.\"`. The subsequent `lines.append(\"END\")` and the second `return` are therefore unreachable code, matching the known dead\u2011code issue (Q3-dead-code). This is a real, actionable problem."
+    "judge_rationale": "The function returns early with `return header + \"\\nNo notes yet.\"` when `count == 0`. The subsequent `lines.append(\"END\")` and the second `return \"\\n\".join(lines)` are therefore unreachable code, matching the known dead\u2011code issue."
   },
   {
     "pr": "quality-refactor",
@@ -216,12 +230,12 @@
     "line": 32,
     "severity": "medium",
     "title": "Duplicated string truncation logic",
-    "problem": "The strip, slice, and title-case operations are repeated identically for both title and body. This duplication makes the code harder to maintain because any formatting change must be applied in two places. | The sequence of strip, truncate to 60 characters, and title-case is repeated identically for both title and body, violating DRY and increasing maintenance risk.",
+    "problem": "The strip, slice, and title-case operations are repeated identically for both title and body. This duplication makes the code harder to maintain because any formatting change must be applied in two places. | The sequence of strip, truncate to 60 characters, and title-case is repeated identically for both title and body, violating DRY and increasing maintenance risk. | The strip, truncate, and title-case logic is repeated verbatim for both title and body, violating DRY and making future changes error-prone. | The sequence of `.strip()`, slice to 60, and `.title()` is repeated identically for both `title` and `body`, violating DRY and making future formatting changes harder.",
     "suggestion": "Extract a helper function such as def _truncate(text): return text.strip()[:60].title() and reuse it for both fields.",
     "verdict": "valid",
     "fp_type": null,
     "matched_known_id": "Q2-duplicated-logic",
-    "judge_rationale": "The code repeats the same three-step transformation (strip, truncate to 60 characters, title\u2011case) for both the note title and body. This duplicated logic is present in the diff and aligns with the known issue Q2-duplicated-logic. Extracting a helper function would reduce repetition and improve maintainability."
+    "judge_rationale": "The code repeats the same sequence of .strip(), slice to 60 characters, and .title() for both the note's title and body. This duplicated logic is present in the diff and matches the known issue Q2-duplicated-logic, making the finding actionable."
   },
   {
     "pr": "quality-refactor",
@@ -230,12 +244,12 @@
     "line": 10,
     "severity": "medium",
     "title": "",
-    "problem": "The function modifies the input `tags` list in-place by appending \"generated\", which can cause side effects for the caller and unexpected behavior. | The function modifies the input `tags` list by appending 'generated', which mutates the caller's data and could lead to unintended side effects or data exposure.",
+    "problem": "The function modifies the input `tags` list in-place by appending \"generated\", which can cause side effects for the caller and unexpected behavior. | The function modifies the input `tags` list by appending 'generated', which mutates the caller's data and could lead to unintended side effects or data exposure. | The function appends 'generated' to the input `tags` list, mutating the caller's data unexpectedly, which could violate caller assumptions. | The function modifies the caller's `tags` list by appending 'generated', which is a side effect that can corrupt caller data and lead to unintended behavior. | The function modifies the input `tags` list by appending 'generated', which mutates the caller's data unexpectedly and violates the principle of least surprise.",
     "suggestion": "",
     "verdict": "valid",
     "fp_type": null,
     "matched_known_id": "Q1-mutable-default",
-    "judge_rationale": "The function receives a list via the `tags` parameter (defaulting to a mutable list) and appends \"generated\" to it. This mutates the caller\u2011provided list (or the shared default), causing side effects and unexpected behavior. The issue is present in the diff and aligns with the known mutable\u2011default problem."
+    "judge_rationale": "The function signature uses a mutable default argument `tags=[]` and then unconditionally calls `tags.append(\"generated\")`. This mutates the list object that may have been supplied by the caller (or the shared default), causing side\u2011effects and unexpected behavior. The issue is present in the diff and is actionable."
   },
   {
     "pr": "quality-refactor",
@@ -244,12 +258,12 @@
     "line": 13,
     "severity": "medium",
     "title": "Function mutates caller's tags list",
-    "problem": "Appending 'generated' directly to the tags list modifies the caller's object in-place, creating an unexpected side effect. Callers may reuse the same list for other purposes and see it unexpectedly altered.",
+    "problem": "Appending 'generated' directly to the tags list modifies the caller's object in-place, creating an unexpected side effect. Callers may reuse the same list for other purposes and see it unexpectedly altered. | Appending \"generated\" to `tags` modifies the input list in-place, causing surprising side effects for the caller.",
     "suggestion": "Create a local copy before mutating, e.g., local_tags = list(tags) + ['generated'], and use local_tags for the header.",
     "verdict": "valid",
     "fp_type": null,
     "matched_known_id": "Q1-mutable-default",
-    "judge_rationale": "The function signature uses a mutable default argument `tags=[]` and then mutates it with `tags.append(\"generated\")`. This modifies the list object that may be shared across calls, leading to unexpected side effects. The finding correctly identifies the problem and suggests creating a local copy before mutation, which is an actionable fix."
+    "judge_rationale": "The function defines `tags=[]` as a default argument and then calls `tags.append(\"generated\")`. This mutates the list object that may be shared across calls or passed in by the caller, leading to unexpected side effects. The issue is present in the diff and aligns with the known Q1-mutable-default problem."
   },
   {
     "pr": "quality-refactor",
@@ -258,68 +272,124 @@
     "line": 7,
     "severity": "medium",
     "title": "Mutable default argument for tags",
-    "problem": "Using a mutable list `tags=[]` as a default argument can lead to unexpected behavior where the list persists across function calls, potentially leaking data between different user digests. | The `db_path` parameter is passed directly to `list_notes` without validation, which could allow an attacker to specify an arbitrary filesystem path, leading to unauthorized data access. | Using a mutable list as a default argument can lead to unexpected behavior where tags accumulate across function calls, potentially exposing data from previous invocations.",
+    "problem": "Using a mutable list `tags=[]` as a default argument can lead to unexpected behavior where the list persists across function calls, potentially leaking data between different user digests. | The `db_path` parameter is passed directly to `list_notes` without validation, which could allow an attacker to specify an arbitrary filesystem path, leading to unauthorized data access. | Using a mutable list as a default argument can lead to unexpected behavior where tags accumulate across function calls, potentially exposing data from previous invocations. | The `db_path` parameter is passed directly to `list_notes` without validation, which could allow an attacker to specify an arbitrary filesystem path, leading to path traversal. | The function appends 'generated' to the `tags` list, directly modifying the caller's provided list, which is a side effect that can lead to unexpected behavior and data corruption. | The `db_path` parameter is passed directly to `list_notes` without validation, which could allow an attacker to specify an arbitrary filesystem path if `list_notes` uses it unsafely.",
     "suggestion": "Change the default to `None` and initialize inside the function: `def build_digest(owner, db_path=None, tags=None):` and `if tags is None: tags = []; tags.append(\"generated\")`.",
     "verdict": "valid",
     "fp_type": null,
     "matched_known_id": "Q1-mutable-default",
-    "judge_rationale": "The diff shows `def build_digest(owner, db_path=None, tags=[])` which uses a mutable list as a default argument. This matches the known issue Q1-mutable-default and is an actionable bug because the list persists across calls, causing tags to accumulate. The suggested fix to default to None and initialize inside the function is appropriate."
+    "judge_rationale": "The function `build_digest` is defined with a mutable default argument `tags=[]`, which persists across calls and can cause unintended side effects. This matches the known issue Q1-mutable-default. The additional comments about `db_path` are not relevant to the mutable default problem, but the core issue is present and actionable."
   },
   {
     "pr": "quality-refactor",
     "agent": "quality",
     "path": "app/digest.py",
     "line": 26,
-    "severity": "low",
-    "title": "Inconsistent empty-state return format",
-    "problem": "The early return for empty notes bypasses the lines list and omits the separator, producing output that differs from the standard multi-line format.",
-    "suggestion": "Replace with lines.append(\"No notes yet.\"); return \"\\n\".join(lines) to keep formatting consistent.",
+    "severity": "medium",
+    "title": "Inconsistent formatting for empty notes",
+    "problem": "The early return for empty notes bypasses the lines list and omits the separator, producing output that differs from the standard multi-line format. | The early return when count==0 bypasses the standard lines list, omitting the separator and producing a differently structured output than the non-empty case.",
+    "suggestion": "Instead of returning early, append 'No notes yet.' to lines and return '\\n'.join(lines) so the format is uniform.",
     "verdict": "valid",
     "fp_type": null,
     "matched_known_id": null,
-    "judge_rationale": "The function returns early with `return header + \"\\nNo notes yet.\"` which skips the previously built `lines` list that includes the separator line. This produces an output format that differs from the normal multi\u2011line digest format used for non\u2011empty note sets. The suggested change to append the message to `lines` and return the joined list would make the empty\u2011state output consistent with the rest of the function. The issue is present in the diff and is actionable."
+    "judge_rationale": "The code returns early when `count == 0` with `return header + \"\\nNo notes yet.\"`, which skips the `lines` list that contains the header separator (`\"=\" * len(header)`). This produces output that lacks the separator line present in the non\u2011empty case, leading to inconsistent formatting. The suggestion to build the output via the `lines` list for both cases is actionable and directly addresses the observed behavior."
+  },
+  {
+    "pr": "quality-refactor",
+    "agent": "quality",
+    "path": "app/digest.py",
+    "line": 27,
+    "severity": "medium",
+    "title": "Unreachable dead code after return",
+    "problem": "The return statement on line 26 exits the function, so the comment and subsequent lines.append and return on lines 27-29 are never executed. | The early return for the empty case bypasses the header underline and uses a different layout than the non-empty case, producing inconsistent output.",
+    "suggestion": "Remove lines 27-29 entirely.",
+    "verdict": "valid",
+    "fp_type": null,
+    "matched_known_id": "Q3-dead-code",
+    "judge_rationale": "The function returns early on line 24 (return header + \"\\nNo notes yet.\") when there are no notes. The subsequent comment, lines.append(\"END\"), and return statement on lines 25\u201127 are therefore never executed, constituting dead code. Removing these unreachable lines will clean up the function and avoid confusion."
+  },
+  {
+    "pr": "quality-refactor",
+    "agent": "security",
+    "path": "app/digest.py",
+    "line": 3,
+    "severity": "medium",
+    "title": "Mutable default argument for tags",
+    "problem": "The function uses a mutable list `tags=[]` as a default argument, which is shared across all calls and can lead to unexpected data leakage between users. | The function parameter `tags=[]` uses a mutable list as a default argument, which is shared across all calls, leading to unexpected data persistence and potential data leakage between users. | The function uses a mutable list `tags=[]` as a default argument, which is shared across all calls, leading to unintended data persistence and potential data exposure between users. | The default argument `tags=[]` is mutable, causing shared state across function calls, which can lead to unexpected data leakage between users.",
+    "suggestion": "Change default to `None` and initialize inside the function: `def build_digest(owner, db_path=None, tags=None):` then `if tags is None: tags = []`.",
+    "verdict": "valid",
+    "fp_type": null,
+    "matched_known_id": "Q1-mutable-default",
+    "judge_rationale": "The diff shows `def build_digest(owner, db_path=None, tags=[])` which uses a mutable list as a default argument. This default list is shared across calls, causing unintended state leakage. The suggested fix (default to None and initialize inside) is appropriate."
+  },
+  {
+    "pr": "quality-refactor",
+    "agent": "quality+security",
+    "path": "app/digest.py",
+    "line": 25,
+    "severity": "medium",
+    "title": "Unreachable code after unconditional return",
+    "problem": "The lines after `return header + \"\\nNo notes yet.\"` are unreachable, which is a logic error but does not directly cause a security vulnerability. | The `return` on line 25 exits the function early, so the subsequent comment, `lines.append('END')`, and second `return` on lines 26-28 never execute.",
+    "suggestion": "Remove the dead code on lines 26-28, or restructure the no-notes path to populate `lines` and return a single `\\n`.join(lines) at the end of the function.",
+    "verdict": "valid",
+    "fp_type": null,
+    "matched_known_id": "Q3-dead-code",
+    "judge_rationale": "The function returns early on line 25 when count == 0. The subsequent comment, `lines.append(\"END\")`, and the second `return` on lines 26\u201128 are never executed, constituting dead code. This matches the known dead\u2011code issue (Q3-dead-code) and is an actionable problem that should be fixed."
+  },
+  {
+    "pr": "quality-refactor",
+    "agent": "quality",
+    "path": "app/digest.py",
+    "line": 42,
+    "severity": "low",
+    "title": "Embedded newline causes extra blank line",
+    "problem": "Appending a string that starts with \\n to the lines list causes '\\n'.join(lines) to insert an unintended empty line before the count summary. | Appending a string that starts with `\\n` to a list that is later `\\n`.join()ed creates an extra blank line in the output and is fragile. | Appending a string that starts with `\\n` to `lines` causes `\"\\n\".join(lines)` to insert an extra blank line before the note count, producing inconsistent formatting.",
+    "suggestion": "Change lines.append(f'\\n{count} note(s).') to lines.append(f'{count} note(s).').",
+    "verdict": "valid",
+    "fp_type": null,
+    "matched_known_id": null,
+    "judge_rationale": "The code appends `f\"\\n{count} note(s).\"` to the `lines` list, then joins the list with `\"\\n\".join(lines)`. Because the appended string already begins with a newline, the join inserts an extra blank line before the count summary, resulting in unintended spacing. This is a concrete, actionable formatting issue present at the indicated line."
   },
   {
     "pr": "test-gap",
     "agent": "test_gap",
     "path": "app/stats.py",
-    "line": 10,
-    "severity": "high",
-    "title": "",
-    "problem": "The reading_time_minutes function has several branches and is not covered by tests, which could lead to bugs and incorrect functionality. This function is used to estimate reading time, which is a critical feature. | The function reading_time_minutes is not covered by any test, which may lead to bugs or incorrect behavior. This function has multiple branches that need to be tested to ensure correctness.",
-    "suggestion": "",
+    "line": 12,
+    "severity": "medium",
+    "title": "Missing test coverage for new code",
+    "problem": "app/stats.py adds/changes reading_time_minutes, note_stats but has no matching test file (tests/test_stats.py).",
+    "suggestion": "Add tests in tests/test_stats.py covering reading_time_minutes, note_stats.",
     "verdict": "valid",
     "fp_type": null,
     "matched_known_id": "T1-missing-test",
-    "judge_rationale": "The diff introduces the new function `reading_time_minutes` (and `note_stats`) without any accompanying test file. The finding correctly identifies that the function has multiple branches and lacks test coverage, which aligns with the known issue T1-missing-test that flags missing tests for these new public functions. Therefore the issue is real, actionable, and matches the known issue."
-  },
-  {
-    "pr": "test-gap",
-    "agent": "test_gap",
-    "path": "app/stats.py",
-    "line": 20,
-    "severity": "high",
-    "title": "Missing Test",
-    "problem": "The function note_stats is not covered by any test, which may lead to bugs or incorrect behavior. This function aggregates stats across notes and needs to be tested for correctness.",
-    "suggestion": "Add unit tests for note_stats in tests/test_stats.py to cover different input scenarios and edge cases.",
-    "verdict": "valid",
-    "fp_type": null,
-    "matched_known_id": "T1-missing-test",
-    "judge_rationale": "The diff adds a new public function `note_stats` (and `reading_time_minutes`) but there is no corresponding test file in the repository. This matches the known issue T1-missing-test, which flags the missing coverage. Adding unit tests for `note_stats` is a concrete, actionable improvement."
+    "judge_rationale": "The diff introduces a new module with two public functions but no corresponding test file is present. This matches the known test-gap issue and is an actionable problem: tests should be added to verify reading_time_minutes and note_stats behavior."
   },
   {
     "pr": "test-gap",
     "agent": "quality",
     "path": "app/stats.py",
     "line": 26,
-    "severity": "medium",
-    "title": "",
-    "problem": "The code assumes every note dict contains a 'body' key; a missing key will raise an unhandled KeyError during aggregation.",
-    "suggestion": "",
+    "severity": "high",
+    "title": "Fragile dict access on note body",
+    "problem": "The code assumes every note dict contains a 'body' key; a missing key will raise an unhandled KeyError during aggregation. | The code assumes every note dict contains a 'body' key, so a missing key raises KeyError and crashes aggregation. This makes the stats function brittle against malformed or evolving data.",
+    "suggestion": "Use n.get('body', '') or validate the note structure before aggregating, e.g., sum(word_count(n.get('body', '')) for n in notes).",
     "verdict": "valid",
     "fp_type": null,
     "matched_known_id": null,
-    "judge_rationale": "The `note_stats` implementation directly indexes each note dictionary with `n[\"body\"]`. If `list_notes` ever returns a note missing the `body` key, a `KeyError` will be raised, causing the function to fail at runtime. This is a concrete, actionable issue in the diff, unrelated to the known missing\u2011test problem."
+    "judge_rationale": "The note_stats function directly indexes each note dict with n[\"body\"]. If any note lacks a 'body' key, a KeyError will be raised, causing the aggregation to fail. This is a concrete risk in the code as written, and the suggested use of n.get('body', '') or validation would make the function robust. The issue is grounded in the diff and is actionable."
+  },
+  {
+    "pr": "test-gap",
+    "agent": "quality+security+test_gap",
+    "path": "app/stats.py",
+    "line": 24,
+    "severity": "high",
+    "title": "",
+    "problem": "The db_path parameter is passed directly to list_notes without validation, which could allow an attacker to read arbitrary files if the function uses the path unsafely. | The note_stats function is not covered by tests, which could lead to bugs and incorrect functionality. This function is used to aggregate word and reading-time stats, which is a critical feature. | Branching between two `list_notes` invocations based on `db_path` truthiness duplicates the call site. If the underlying function accepts `None`, this conditional is needless complexity. | The db_path parameter is passed directly to list_notes without validation, which could allow an attacker to read arbitrary files if list_notes uses the path unsafely. | The db_path parameter is passed directly to list_notes without validation or sanitization, which could allow path traversal or SQL injection if db_path is used unsafely in list_notes. | The function note_stats is not covered by tests, which means its correctness and functionality are not verified. This is a high-severity issue because it can lead to bugs and errors in the code. | The code assumes every note dict contains a `\"body\"` key. A malformed note missing that key will raise an unhandled `KeyError`, crashing the aggregation. | The db_path parameter is passed directly to list_notes without validation, which could allow an attacker to specify an arbitrary filesystem path, leading to path traversal and unauthorized data access. | The db_path parameter is passed directly to list_notes without validation, which could allow an attacker to specify an arbitrary file path, leading to unauthorized data access or path traversal. | The db_path parameter is passed directly to list_notes() without validation, which could allow an attacker to read arbitrary database files if the function doesn't properly sanitize the path.",
+    "suggestion": "",
+    "verdict": "valid",
+    "fp_type": null,
+    "matched_known_id": "T1-missing-test",
+    "judge_rationale": "The diff adds new public functions (reading_time_minutes and note_stats) without any accompanying test file, which matches the known issue T1-missing-test. This lack of test coverage is a concrete, actionable problem. The other concerns raised (e.g., passing db_path without validation, duplicate conditional, assumed presence of a \"body\" key) are speculative because the implementation of list_notes is not shown, and they are not directly evident from the diff itself. Nonetheless, the missing tests alone make the finding valid."
   },
   {
     "pr": "test-gap",
@@ -328,12 +398,12 @@
     "line": 28,
     "severity": "medium",
     "title": "",
-    "problem": "Assuming every note dict contains a \"body\" key is brittle. A malformed note or schema change will raise a KeyError and crash the aggregation.",
+    "problem": "Assuming every note dict contains a \"body\" key is brittle. A malformed note or schema change will raise a KeyError and crash the aggregation. | The `'body'` key is accessed in two places with `n[\"body\"]`, which risks `KeyError` and forces duplicate updates if the field name changes. | The function already sums individual word counts into `total_words`, then rebuilds all note bodies into a single string to re-count words for reading time. This wastes memory and risks inconsistent results. | Accessing `n[\"body\"]` assumes every note dict contains that key; a malformed or summary note will raise an unhandled KeyError and abort aggregation.",
     "suggestion": "",
-    "verdict": "valid",
-    "fp_type": null,
+    "verdict": "invalid",
+    "fp_type": "trivial",
     "matched_known_id": null,
-    "judge_rationale": "The implementation of `note_stats` directly indexes each note dict with `n[\"body\"]` both for word counting and for building the reading\u2011time string. If a note dict lacks the `\"body\"` key (e.g., due to malformed data or a schema change), a `KeyError` will be raised, causing the function to crash. This is a concrete, actionable robustness issue that the reviewer correctly points out."
+    "judge_rationale": "The finding points out that accessing n[\"body\"] could raise a KeyError if a note lacks that key. However, the codebase's contract for list_notes is not shown, and it is reasonable to assume notes always contain a \"body\" field. Raising a defensive comment without evidence is speculative and not actionable in this context, making the issue trivial and not worth a review comment."
   },
   {
     "pr": "test-gap",
@@ -342,12 +412,12 @@
     "line": 18,
     "severity": "medium",
     "title": "Missing zero-WPM guard",
-    "problem": "The function divides by wpm without validation, causing an unhandled ZeroDivisionError if a caller passes wpm=0.",
+    "problem": "The function divides by wpm without validation, causing an unhandled ZeroDivisionError if a caller passes wpm=0. | If a caller passes wpm=0, the function raises ZeroDivisionError. The parameter is user-facing and should validate against non-positive values.",
     "suggestion": "Add a guard clause before dividing: if wpm <= 0: raise ValueError(\"wpm must be positive\")",
     "verdict": "valid",
     "fp_type": null,
     "matched_known_id": null,
-    "judge_rationale": "The function reading_time_minutes divides the word count by the wpm argument without checking that wpm is non\u2011zero. If a caller supplies wpm=0, a ZeroDivisionError will be raised at runtime. Adding a guard (e.g., raise ValueError for wpm <= 0) is an actionable fix. This issue is present in the diff and is not covered by the known missing\u2011test issue."
+    "judge_rationale": "The `reading_time_minutes` function divides `words` by the `wpm` argument without checking that `wpm` is positive. If a caller supplies `wpm=0` (or a negative value), a ZeroDivisionError (or nonsensical result) will be raised. Adding a guard such as `if wpm <= 0: raise ValueError(\"wpm must be positive\")` would make the function robust against invalid input. This issue is present in the diff and is actionable."
   },
   {
     "pr": "test-gap",
@@ -356,12 +426,12 @@
     "line": 23,
     "severity": "medium",
     "title": "Incorrect type hint for optional parameter",
-    "problem": "db_path defaults to None but is typed as str, which misleads static analysis and IDE autocomplete.",
+    "problem": "db_path defaults to None but is typed as str, which misleads static analysis and IDE autocomplete. | The condition `if db_path` conflates an empty string with a missing path, so passing `db_path=\"\"` silently drops the argument and falls back to the default database. The parameter also incorrectly hints `str` while defaulting to `None`.",
     "suggestion": "Change the signature to: def note_stats(owner: str, db_path: str | None = None) -> dict:",
     "verdict": "valid",
     "fp_type": null,
     "matched_known_id": null,
-    "judge_rationale": "The function note_stats is declared as def note_stats(owner: str, db_path: str = None) -> dict, which annotates db_path as a plain str while providing a default value of None. This creates a type hint inconsistency that can mislead static type checkers and IDEs. Updating the annotation to db_path: str | None = None (or Optional[str]) resolves the mismatch and is an actionable improvement."
+    "judge_rationale": "The function `note_stats` is declared as `def note_stats(owner: str, db_path: str = None) -> dict:`. The type hint `str` contradicts the default value `None`, which should be expressed as `str | None` (or `Optional[str]`). This can mislead static analysis tools and cause incorrect IDE autocomplete. The suggested fix to annotate the parameter as `db_path: str | None = None` is appropriate and actionable."
   },
   {
     "pr": "test-gap",
@@ -375,7 +445,7 @@
     "verdict": "valid",
     "fp_type": null,
     "matched_known_id": null,
-    "judge_rationale": "The function `note_stats` is declared as `def note_stats(owner: str, db_path: str = None) -> dict:`. The parameter `db_path` is typed as `str` but the default value is `None`, which contradicts the annotation and can confuse static type checkers. Updating the annotation to `db_path: str | None = None` (or `Optional[str] = None`) would resolve the mismatch and improve type safety."
+    "judge_rationale": "The function `note_stats` is declared as `def note_stats(owner: str, db_path: str = None) -> dict:`. The parameter `db_path` is annotated as `str` but defaults to `None`, which is inconsistent with the type hint and will cause static type checkers (e.g., mypy) to report an error. Updating the annotation to `db_path: str | None = None` (or `Optional[str] = None`) would correctly express the allowed values and improve type safety."
   },
   {
     "pr": "test-gap",
@@ -384,12 +454,12 @@
     "line": 25,
     "severity": "medium",
     "title": "Unsafe direct dict key access",
-    "problem": "Indexing `n['body']` assumes every note dict contains a `'body'` key. Missing keys will raise a `KeyError`, making the function brittle to data changes or malformed notes. | Annotating db_path as str while defaulting to None is inaccurate and confusing to type checkers and readers. | The db_path parameter is passed directly to list_notes without validation, which could allow path traversal or SQL injection if the value is user-controlled and used unsafely within list_notes.",
+    "problem": "Indexing `n['body']` assumes every note dict contains a `'body'` key. Missing keys will raise a `KeyError`, making the function brittle to data changes or malformed notes. | Annotating db_path as str while defaulting to None is inaccurate and confusing to type checkers and readers. | The db_path parameter is passed directly to list_notes without validation, which could allow path traversal or SQL injection if the value is user-controlled and used unsafely within list_notes. | The parameter `db_path: str = None` incorrectly claims the type is `str` when it accepts `None`. This reduces clarity for callers and breaks static analysis. | The function concatenates all note bodies into a single string for reading time calculation, which could expose large amounts of data in memory if note bodies are large or numerous. | The db_path parameter defaults to None but is typed as str, which misleads type checkers and callers about valid inputs. | The conditional if db_path treats an empty string the same as None. If list_notes accepts an explicit empty string as a valid db_path, it will be silently dropped, causing a call with the wrong signature.",
     "suggestion": "Use `n.get('body', '')` instead of `n['body']` when extracting note content.",
     "verdict": "valid",
     "fp_type": null,
     "matched_known_id": null,
-    "judge_rationale": "The diff shows `note_stats` accessing `n[\"body\"]` directly, which will raise a KeyError if any note dict lacks that key. This is a real robustness issue and the suggested fix (`n.get('body', '')`) is actionable. Additionally, the function signature `db_path: str = None` mismatches the default value; proper typing would be `Optional[str]`. Both points are grounded in the code. The comment about potential path traversal or SQL injection is speculative and outside the scope of this diff, but it does not invalidate the core issue identified."
+    "judge_rationale": "The diff shows `note_stats` accesses `n[\"body\"]` directly on each note dict. If any note lacks a `\"body\"` key, a `KeyError` will be raised, which is a real brittleness issue. The suggestion to use `n.get(\"body\", \"\")` is appropriate. Additionally, the type annotation `db_path: str = None` is inaccurate; it should be `Optional[str]`. These are concrete, actionable problems present in the code. Other parts of the finding (path\u2011traversal, memory concerns, duplicate comments) are speculative or out of scope, but they do not negate the valid core issue."
   },
   {
     "pr": "test-gap",
@@ -403,7 +473,7 @@
     "verdict": "valid",
     "fp_type": null,
     "matched_known_id": null,
-    "judge_rationale": "The diff shows the module docstring contains a NOTE about missing test coverage, which is a PR\u2011specific comment rather than documentation of the module's behavior. Removing such meta\u2011comments from production docstrings is an actionable improvement, independent of the missing test issue already tracked."
+    "judge_rationale": "The diff shows the module docstring contains a NOTE about missing test coverage, which is unrelated to the module's purpose. Production docstrings should describe functionality, not PR TODOs. Removing this meta-comment and providing a proper description is an actionable improvement."
   },
   {
     "pr": "test-gap",
@@ -412,12 +482,12 @@
     "line": 27,
     "severity": "medium",
     "title": "Conditional call duplicates list_notes invocation",
-    "problem": "Using a ternary to conditionally pass db_path duplicates the call site and obscures the API contract. It suggests list_notes cannot accept None, yet None is the parameter default.",
+    "problem": "Using a ternary to conditionally pass db_path duplicates the call site and obscures the API contract. It suggests list_notes cannot accept None, yet None is the parameter default. | The ternary `if db_path else` is unnecessary if `list_notes` accepts `None`, and it silently drops falsy strings like empty paths. This adds coupling and reduces maintainability. | Using `if db_path` treats an empty string as equivalent to None, which may unintentionally omit a valid path argument and forces two separate call signatures.",
     "suggestion": "Simplify to notes = list_notes(owner, db_path=db_path) if the underlying function accepts None; otherwise update the type hint and default to reflect the actual required shape.",
     "verdict": "invalid",
-    "fp_type": "trivial",
+    "fp_type": "out_of_scope",
     "matched_known_id": null,
-    "judge_rationale": "The comment points out a stylistic choice\u2014using a ternary to call `list_notes` with or without `db_path`. Without seeing `list_notes` implementation we cannot know if it accepts `None`. Even if it does, consolidating the call is a minor style preference, not a functional bug or correctness issue. The finding does not identify a real defect in the diff, so it is an unnecessary nitpick."
+    "judge_rationale": "The comment critiques a ternary that conditionally passes db_path to list_notes, but without seeing list_notes' signature we cannot determine a functional problem. The suggestion is purely stylistic and speculative about API behavior, which falls outside the scope of concrete, actionable issues in the diff."
   },
   {
     "pr": "test-gap",
@@ -431,7 +501,21 @@
     "verdict": "valid",
     "fp_type": null,
     "matched_known_id": null,
-    "judge_rationale": "The diff shows that `note_stats` builds a single large string by joining all note bodies and then passes it to `reading_time_minutes`, which internally calls `word_count` again. This duplicates the word\u2011count work already performed when computing `total_words` and can consume unnecessary memory for many or large notes. Refactoring to compute reading time directly from the already\u2011calculated `total_words` (e.g., via a `reading_time_from_words` helper) would eliminate the redundant counting and string materialisation, making the function more efficient. The finding accurately reflects the code and proposes a concrete, actionable improvement."
+    "judge_rationale": "The note_stats function computes total_words by summing word_count over each note, then recomputes the reading time by joining all note bodies into a single string and calling reading_time_minutes, which internally calls word_count again. This duplicates work and allocates a potentially large intermediate string. Refactoring to compute reading time directly from total_words (e.g., via a helper that accepts a word count) would eliminate the redundant counting and memory usage, making the implementation more efficient."
+  },
+  {
+    "pr": "test-gap",
+    "agent": "quality",
+    "path": "app/stats.py",
+    "line": 30,
+    "severity": "medium",
+    "title": "Redundant word_count processing",
+    "problem": "The function already sums individual word counts into total_words, then rebuilds the full text and calls reading_time_minutes, which invokes word_count again. This duplicates work and couples the functions unnecessarily.",
+    "suggestion": "Refactor reading_time_minutes to accept an optional precomputed word count, or compute minutes directly from total_words to avoid reprocessing all text.",
+    "verdict": "valid",
+    "fp_type": null,
+    "matched_known_id": null,
+    "judge_rationale": "The `note_stats` function computes `total_words` by summing `word_count` over each note, then builds a concatenated string of all note bodies and calls `reading_time_minutes`, which internally calls `word_count` again. This repeats the word counting work unnecessarily, leading to wasted CPU cycles and tighter coupling between the two functions. Refactoring to compute the estimated reading minutes directly from `total_words` (or allowing `reading_time_minutes` to accept a pre\u2011computed count) would eliminate the redundant processing and improve performance."
   },
   {
     "pr": "test-gap",
@@ -445,7 +529,7 @@
     "verdict": "invalid",
     "fp_type": "misread",
     "matched_known_id": null,
-    "judge_rationale": "The finding claims the `if not text` check is redundant because `text.strip()` would also be falsy for an empty string. However, `text.strip()` would raise an AttributeError if `text` is None (or any non\u2011string falsy value). The defensive `not text` guard prevents that error, so the check is not redundant. The comment is therefore a misinterpretation of the code rather than a valid issue."
+    "judge_rationale": "The code checks `if not text or not text.strip():` to guard against both empty strings and non\u2011string falsy values such as `None`. Removing the `not text` part would cause an AttributeError on `None.strip()`. The finding assumes `text` is always a string, which is a misinterpretation of the defensive check, making the comment inaccurate and not actionable."
   },
   {
     "pr": "test-gap",
@@ -457,8 +541,64 @@
     "problem": "The condition `not text or not text.strip()` is redundant because `not text.strip()` already evaluates to True for empty strings, making the first clause unnecessary and slightly harder to read.",
     "suggestion": "Simplify to `if not text.strip(): return 0.0`.",
     "verdict": "invalid",
-    "fp_type": "out_of_scope",
+    "fp_type": "misread",
     "matched_known_id": null,
-    "judge_rationale": "The check `if not text or not text.strip():` is not strictly redundant; the first clause guards against `None` (or other falsy non\u2011string values) which would cause `text.strip()` to raise an exception. Removing it would change runtime behavior. The comment is a stylistic suggestion rather than a concrete bug, so it is not a valid actionable issue for this diff."
+    "judge_rationale": "The code indeed contains the condition `if not text or not text.strip():`. While `not text.strip()` would be true for an empty string, the preceding `not text` also guards against `text` being `None` (or other falsy non\u2011string values) which would cause `text.strip()` to raise an AttributeError. Therefore the two checks are not redundant, and simplifying them could introduce a runtime error. The finding misinterprets the purpose of the first clause."
+  },
+  {
+    "pr": "test-gap",
+    "agent": "quality",
+    "path": "app/stats.py",
+    "line": 21,
+    "severity": "low",
+    "title": "Comment contradicts rounding logic",
+    "problem": "The comment claims the function always 'rounds up' to a quarter minute, but `round()` rounds to the nearest value. This mismatch confuses future maintainers.",
+    "suggestion": "Update the comment to '# Round to nearest quarter minute, with a minimum of 0.25 for non-empty text.'",
+    "verdict": "valid",
+    "fp_type": null,
+    "matched_known_id": null,
+    "judge_rationale": "The comment on line 21 states that the function \"always round[s] up to at least a quarter minute,\" but the implementation uses `round(minutes * 4) / 4`, which rounds to the nearest quarter minute, not necessarily up. This discrepancy can mislead future maintainers, so the comment should be corrected to accurately describe the rounding behavior."
+  },
+  {
+    "pr": "test-gap",
+    "agent": "quality",
+    "path": "app/stats.py",
+    "line": 17,
+    "severity": "low",
+    "title": "Redundant empty-string guard",
+    "problem": "The check `not text or not text.strip()` duplicates work because `not text.strip()` already covers empty and whitespace-only strings when text is a str.",
+    "suggestion": "Simplify the condition to `if not text.strip(): return 0.0`.",
+    "verdict": "invalid",
+    "fp_type": "misread",
+    "matched_known_id": null,
+    "judge_rationale": "The code checks `if not text or not text.strip():` to guard against both empty/whitespace strings *and* non\u2011string falsy values such as None. Removing `not text` would cause an AttributeError on None, so the guard is not redundant. The finding misinterprets the purpose of the check."
+  },
+  {
+    "pr": "breaking-signature-callers",
+    "agent": "quality",
+    "path": "app/notes.py",
+    "line": 15,
+    "severity": "high",
+    "title": "Reordering positional params breaks callers",
+    "problem": "Swapping `owner` and `title` in the positional signature changes the public API. Existing callers in tests/test_notes.py and potentially elsewhere that pass arguments positionally will silently map values to the wrong parameters, causing data corruption or test failures. | Swapping `owner` and `title` changes the positional argument contract. Call sites in tests/test_notes.py (lines 4, 15, 25, 26, 31) are not updated in this diff and likely pass arguments positionally, so values will map to the wrong parameters causing incorrect data or test failures.",
+    "suggestion": "Update all call sites to use keyword arguments before reordering, or include the matching changes to tests/test_notes.py and any other callers in the same PR so the new signature is used consistently.",
+    "verdict": "valid",
+    "fp_type": null,
+    "matched_known_id": "B1-broken-callers",
+    "judge_rationale": "The diff reorders the parameters of `create_note`, swapping `owner` and `title`. This changes the public API and will cause any existing positional calls to pass arguments to the wrong parameters, leading to incorrect data or test failures. No caller updates are included in the PR, so the change is a real breaking change that must be addressed."
+  },
+  {
+    "pr": "clean-feature-control",
+    "agent": "quality",
+    "path": "app/tags.py",
+    "line": 5,
+    "severity": "low",
+    "title": "Overly restrictive parameter type",
+    "problem": "The function accepts only `list[str]`, but it only iterates over the input. Callers with tuples, generators, or other iterables must unnecessarily materialize a list first, reducing reusability.",
+    "suggestion": "Widen the parameter to `Iterable[str]` and import it: `from collections.abc import Iterable` then change the signature to `def normalize_tags(tags: Iterable[str]) -> list[str]:`.",
+    "verdict": "invalid",
+    "fp_type": "trivial",
+    "matched_known_id": null,
+    "judge_rationale": "The function works correctly with the current list[str] signature; changing the type hint to Iterable[str] would be a minor stylistic improvement but does not address a bug or functional limitation in the diff. As a low\u2011severity, purely cosmetic suggestion, it is not an actionable issue for this PR."
   }
 ]

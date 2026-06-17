@@ -42,10 +42,10 @@
 **Pattern:** multi-agent (parallel specialists) + grounding + consolidation + an independent verification filter + human gate, expressed as a LangGraph state machine with a Postgres checkpointer.
 
 ```
-                  ┌─ quality  ─┐
-START → fetch_pr → build_context →┤  security  ├→ consolidate → verify → human_gate ─approve→ post_comments → END
-                  └─ test_gap ─┘                       │  ▲                          ─reject──────────────────→ END
-                                                       └──┘ refine (regenerate suggestion, loop back)
+                                                  ┌─ quality ──────┐
+START → fetch_pr → build_context → repo_context →─┼─ security ──────┼→ consolidate → verify → human_gate ─approve→ post_comments → END
+                                                  ├─ test_gap ──────┤                    │  ▲                  ─reject/else───────────→ END
+                                                  └─ deterministic ─┘                    └──┘ refine (regenerate, loop back)
 ```
 
 **Specialist agents (each its own Nebius model, `temperature=0`):**
@@ -61,7 +61,7 @@ START → fetch_pr → build_context →┤  security  ├→ consolidate → ve
 
 **Each finding is structured:** `severity · title · problem (reframed feedback) · suggestion (fix) · location (path:line + symbol) · confidence`.
 
-**Deterministic grounding:** `ruff` runs on the changed lines (lint + bugbear `B` + bandit-equivalent security `S` rules), and a deterministic check confirms whether a matching test file exists and references the changed symbols. These real signals are fed to the agents so findings are grounded in tool output, not guesses.
+**Grounding & repo-awareness:** the agents are fed (a) the **PR intent** (title/description/linked issues), (b) **cross-file references** — where the changed symbols are used elsewhere in the repo, so a signature/behavior change's blast radius is visible, (c) **ruff** lint/SAST signals on the changed lines, and (d) a deterministic **test-existence** check. All diff/PR text is treated as **untrusted** (prompt-injection hardening): agents/verifier/judge are instructed never to follow embedded instructions and to report manipulation attempts. A separate **deterministic** branch emits fact-grounded findings (missing tests) that bypass verifier suppression.
 
 **Tech stack:** Python 3.12 · LangGraph + LangChain · `langchain-nebius` · Postgres (`PostgresSaver` checkpointer + `runs`/`findings`/`approvals`/`token_usage`/`posted_comments` tables) · FastAPI + a single static HTML page (live SSE UI) · `tree-sitter` + `tree-sitter-python` · `ruff` · pytest. No vector DB, no Redis.
 
@@ -125,7 +125,9 @@ After the first working build, the project was hardened using a real evaluation 
 - **#2 — Verification pass (`app/nodes/verify.py`).** An independent verifier model re-checks each finding against the diff, assigns a confidence, and **suppresses likely false positives** (kept visible in the UI, never posted). Fails open. Lifted precision **67% → 84%**, halved noise (2.5 → 1.0 FP/PR), and eliminated all hallucinated FPs — with recall unchanged.
 - **#3 — Deterministic grounding (`app/tools/static_analysis.py`).** `ruff` (lint + bugbear + bandit-equivalent security rules) runs on the changed lines and a deterministic test-existence check grounds `test_gap`; both feed the agent prompts. ruff independently flags the seeded bugs (S105 hardcoded token, S608 SQL injection, B006 mutable default, E722 bare except). Findings are now backed by real tool evidence; the agents surfaced **more valid findings (28 vs 21)** at held precision (security and test_gap reached 100%).
 
-**Honest caveat:** the eval set is small (3 buggy PRs + 1 clean control), so single-finding deltas are within run-to-run noise — #3's grounding benefit in particular shows up most on larger/real PRs. Expanding `evals/prs.yaml` with real PRs is the next eval step.
+- **Tier 1 — repo-awareness, PR intent & injection hardening.** The agents now receive the PR's intent (title/description/linked issues), **cross-file references** for changed symbols (callers/blast radius), and treat all diff/PR text as untrusted (prompt-injection defense). A 5th eval PR was added that *modifies an existing function's parameter order* without updating its positional callers — a silent bug **invisible to diff-only review**. Result: the agent found the 5 callers and **caught it (recall 1/1)** with zero noise. A deterministic missing-test finding was also added so that bug class is grounded in fact, not LLM luck.
+
+**Honest caveat:** the eval set is small (4 buggy PRs + 1 clean control), so single-finding deltas are within run-to-run noise (precision has ranged ~76–86% across runs). Repo-awareness and intent show their value on *modification* and real PRs — additive PRs can't reward them. Expanding `evals/prs.yaml` with real PRs is the next eval step.
 
 ---
 

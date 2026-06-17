@@ -26,6 +26,10 @@ def _merge_group(group: list[Finding]) -> Finding:
     problems = " | ".join(
         dict.fromkeys(f.get("problem", "") for f in group if f.get("problem"))
     )
+    # a group is deterministic if any member is — keeps it exempt from suppression
+    source = ("deterministic"
+              if any(f.get("source") == "deterministic" for f in group)
+              else top.get("source", ""))
     return Finding(
         agent=agents,
         path=top["path"],
@@ -36,6 +40,7 @@ def _merge_group(group: list[Finding]) -> Finding:
         title=top.get("title", ""),
         problem=problems or top.get("problem", ""),
         suggestion=top.get("suggestion", ""),
+        source=source,
         confidence=top.get("confidence", ""),
         draft_comment=top.get("draft_comment", ""),
         in_hunk=top["in_hunk"],

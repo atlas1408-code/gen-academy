@@ -25,21 +25,24 @@ Python 3.11+ · LangGraph + LangChain · `langchain-nebius` · Postgres
 lint/SAST grounding. A separate verifier model cuts false positives, and an
 independent judge model scores eval precision. No vector DB, no Redis.
 
-**Current eval:** 100% recall · 85% precision · F1 92% · ~1 false positive/PR
-(measured by an independent judge — see _Evals_ below).
+**Current eval:** ~100% recall · ~80% precision · ~1–2 false positives/PR
+(measured by an independent judge over 5 PRs incl. a cross-file and a clean-control
+case; precision varies run-to-run on the small set — see _Evals_ below).
 
 ## How it works
 
 ```
-                 ┌─ quality ─┐
-START → fetch_pr → build_context →┤  security  ├→ consolidate → verify → human_gate ─approve→ post_comments → END
-                 └─ test_gap ─┘                          │  ▲                        ─reject──────────────────→ END
-                                                         └──┘ refine (regenerate suggestion, loop back)
+                                                  ┌─ quality ──────┐
+START → fetch_pr → build_context → repo_context →─┼─ security ──────┼→ consolidate → verify → human_gate ─approve→ post_comments → END
+                                                  ├─ test_gap ──────┤                    │  ▲                  ─reject/else───────────→ END
+                                                  └─ deterministic ─┘                    └──┘ refine (regenerate, loop back)
 ```
 
-- **fetch_pr** — parse the PR URL, fetch metadata + raw diff (REST), parse the diff into per-file hunks; retries 5xx/rate-limits, raises a clean error on 404/bad URL.
-- **build_context** — for each changed file, tree-sitter extracts the enclosing function/class and imports; **ruff** (lint + bugbear `B` + bandit-equivalent security `S` rules) runs on the changed lines for deterministic grounding; and a deterministic check confirms whether the matching test file exists and references the changed symbols. These signals are fed to the agents so findings are grounded in real tool output, not guesses.
-- **quality / security / test_gap** — run in parallel; each calls its model through a JSON-repair helper and either appends findings or marks itself *degraded* (never crashes).
+- **fetch_pr** — parse the PR URL, fetch metadata + raw diff (REST), parse the diff into per-file hunks, and capture the PR **title/description + linked issues** (intent); retries 5xx/rate-limits, raises a clean error on 404/bad URL.
+- **build_context** — for each changed file, tree-sitter extracts the enclosing function/class and imports; **ruff** (lint + bugbear `B` + bandit-equivalent security `S` rules) runs on the changed lines for deterministic grounding; and a deterministic check confirms whether the matching test file exists and references the changed symbols.
+- **repo_context** — finds where the changed symbols are used **elsewhere in the repo** (cross-file callers) so the agents can reason about blast radius (e.g. a signature change that breaks callers a diff-only review would miss).
+- **quality / security / test_gap** — run in parallel; each gets the PR intent, code context, cross-file references, and ruff signals (so findings are grounded, not guessed); calls its model through a JSON-repair helper and either appends findings or marks itself *degraded* (never crashes). All diff/PR text is treated as **untrusted** (prompt-injection hardening).
+- **deterministic** — emits fact-grounded findings that don't depend on an LLM (currently: missing-test coverage), exempt from verifier suppression so a real issue can't be drowned out.
 - **consolidate** — validates each finding's `in_hunk` against the hunks, dedupes by `(path, line, side)`, applies any refinements, severity-ranks, and persists.
 - **verify** — an independent verifier model (distinct from the agents) re-checks each finding against the diff, assigns a confidence, and **suppresses likely false positives** (kept visible, never posted). Fails open. Lifted eval precision 67% → 84% with recall unchanged.
 - **human_gate** — `interrupt()`s for approval; resumes with approve / reject / refine.
@@ -135,8 +138,8 @@ app/
   graph.py             build_graph() + Postgres checkpointer
   format.py            compose_comment() — structured fields -> markdown
   progress.py          emit() -> LangGraph custom stream (live UI events)
-  nodes/               fetch_pr, build_context, agents, consolidate, verify, human_gate, post_comments
-  tools/               github (diff/hunks/posting), treesitter_ctx, static_analysis (ruff), json_repair
+  nodes/               fetch_pr, build_context, repo_context, agents, deterministic, consolidate, verify, human_gate, post_comments
+  tools/               github (diff/hunks/posting/intent), treesitter_ctx, static_analysis (ruff), repo_index, json_repair
   db/                  schema.sql, repo.py (runs/findings/approvals/token_usage/posted_comments)
   api/                 server.py (FastAPI) + static/index.html
 evals/   prs.yaml, run_eval.py (precision/recall), judge.py, label_cli.py, cost_summary.py

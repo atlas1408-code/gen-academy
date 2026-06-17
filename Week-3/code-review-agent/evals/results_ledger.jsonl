@@ -1,3 +1,7 @@
 {"ts": "2026-06-17T01:22:48+00:00", "commit": "78d7dc4", "judge": "openai/gpt-oss-120b", "recall": 1.0, "precision": 0.667, "f1": 0.8, "fp_per_pr": 2.5, "valid": 20, "invalid": 10, "uncertain": 0, "passed": false}
 {"ts": "2026-06-17T01:41:38+00:00", "commit": "fb233e0", "judge": "openai/gpt-oss-120b", "recall": 1.0, "precision": 0.84, "f1": 0.913, "fp_per_pr": 1.0, "valid": 21, "invalid": 4, "uncertain": 0, "passed": true}
 {"ts": "2026-06-17T01:56:02+00:00", "commit": "446e0cb", "judge": "openai/gpt-oss-120b", "recall": 1.0, "precision": 0.848, "f1": 0.918, "fp_per_pr": 1.25, "valid": 28, "invalid": 5, "uncertain": 0, "passed": true}
+{"ts": "2026-06-17T02:35:25+00:00", "commit": "df0fa20", "judge": "openai/gpt-oss-120b", "recall": 1.0, "precision": 0.762, "f1": 0.865, "fp_per_pr": 2.5, "valid": 32, "invalid": 10, "uncertain": 0, "passed": true}
+{"ts": "2026-06-17T02:42:51+00:00", "commit": "df0fa20", "judge": "openai/gpt-oss-120b", "recall": 0.857, "precision": 0.865, "f1": 0.861, "fp_per_pr": 1.25, "valid": 32, "invalid": 5, "uncertain": 0, "passed": true}
+{"ts": "2026-06-17T02:54:16+00:00", "commit": "df0fa20", "judge": "openai/gpt-oss-120b", "recall": 0.875, "precision": 0.838, "f1": 0.856, "fp_per_pr": 1.2, "valid": 31, "invalid": 6, "uncertain": 0, "passed": true}
+{"ts": "2026-06-17T03:09:18+00:00", "commit": "df0fa20", "judge": "openai/gpt-oss-120b", "recall": 1.0, "precision": 0.791, "f1": 0.883, "fp_per_pr": 1.8, "valid": 34, "invalid": 9, "uncertain": 0, "passed": true}

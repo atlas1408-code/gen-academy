@@ -60,6 +60,9 @@ def stubbed(monkeypatch):
     )
     import app.nodes.build_context as bc_mod
     monkeypatch.setattr(bc_mod.github, "fetch_file_at", lambda *a, **k: None)
+    # repo-aware context (#2): no repo tree lookups over the network in tests.
+    import app.tools.github as gh_mod
+    monkeypatch.setattr(gh_mod, "fetch_tree", lambda *a, **k: [])
     # security degrades (garbage), the other two succeed.
     fakes = {"quality": _LLM(_good(2)), "security": _LLM(_GARBAGE),
              "test_gap": _LLM(_good(3))}

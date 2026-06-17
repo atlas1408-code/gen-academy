@@ -20,6 +20,7 @@ class Finding(TypedDict):
     title: str          # concise headline (<= ~8 words)
     problem: str        # concise reframed feedback: what's wrong and why
     suggestion: str     # concrete suggested fix (may include a short snippet)
+    source: str         # "" for LLM-produced, "deterministic" for tool-grounded
     confidence: str     # verifier confidence: high | medium | low | "" (unverified)
     draft_comment: str  # composed markdown body to post (derived from the above)
     in_hunk: bool       # whether `line` falls inside a diff hunk (postable inline)
@@ -46,6 +47,7 @@ class ReviewState(TypedDict, total=False):
     hunks: dict[str, list[Hunk]]       # path -> hunks (for inline-postability checks)
     context: dict[str, Any]
     static_signals: list[dict[str, Any]]  # deterministic ruff signals on changed lines
+    repo_refs: dict[str, list[dict[str, Any]]]  # changed symbol -> cross-file usages
 
     findings: Annotated[list[Finding], operator.add]   # raw union from all agents
     degraded_agents: Annotated[list[str], operator.add]

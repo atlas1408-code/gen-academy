@@ -1,47 +1,48 @@
-# Eval report — 2026-06-17 01:56 UTC
+# Eval report — 2026-06-17 03:09 UTC
 
-**PASS** · recall 100% · precision 85% · F1 92% · 1.2 false positives/PR
+**PASS** · recall 100% · precision 79% · F1 88% · 1.8 false positives/PR
 
 - models: Qwen/Qwen3-235B-A22B-Instruct-2507, deepseek-ai/DeepSeek-V3.2, meta-llama/Llama-3.3-70B-Instruct, moonshotai/Kimi-K2.6
 - judge: openai/gpt-oss-120b
-- findings judged: valid=28 invalid=5 uncertain=0
+- findings judged: valid=34 invalid=9 uncertain=0
 
 ## Thresholds
 | metric | value | target | |
 |---|---|---|---|
 | recall | 100% | ≥80% | ✅ |
-| precision | 85% | ≥70% | ✅ |
-| FP/PR | 1.2 | ≤3.0 | ✅ |
+| precision | 79% | ≥70% | ✅ |
+| FP/PR | 1.8 | ≤3.0 | ✅ |
 
 ## Recall by category
 | category | caught / expected |
 |---|---|
-| quality | 4/4 |
+| quality | 5/5 |
 | security | 2/2 |
 | test_gap | 1/1 |
 
 ## Precision by agent (raw)
 | agent | valid | invalid | uncertain | precision |
 |---|---|---|---|---|
-| quality | 20 | 5 | 0 | 80% |
-| security | 13 | 0 | 0 | 100% |
-| test_gap | 9 | 0 | 0 | 100% |
+| quality | 26 | 8 | 0 | 76% |
+| security | 16 | 0 | 0 | 100% |
+| test_gap | 12 | 1 | 0 | 92% |
 
 ## False-positive taxonomy
 | type | count |
 |---|---|
-| out_of_scope | 3 |
-| trivial | 1 |
-| misread | 1 |
+| out_of_scope | 4 |
+| misread | 3 |
+| trivial | 2 |
 
 ## Per-PR
 | PR | findings | valid | invalid | recall | degraded |
 |---|---|---|---|---|---|
-| security-sql-injection | 12 | 10 | 2 | 2/2 | — |
-| quality-refactor | 8 | 8 | 0 | 4/4 | — |
-| test-gap | 13 | 10 | 3 | 1/1 | — |
-| clean-feature-control | 0 | 0 | 0 | — (control) | — |
+| security-sql-injection | 13 | 10 | 3 | 2/2 | — |
+| quality-refactor | 12 | 12 | 0 | 4/4 | — |
+| test-gap | 16 | 11 | 5 | 1/1 | — |
+| breaking-signature-callers | 1 | 1 | 0 | 1/1 | — |
+| clean-feature-control | 1 | 0 | 1 | — (control) | — |
 
 ## Cost (tokens)
-- agent tokens (this eval): 132344 (quality=100622, security=15400, test_gap=16322)
-- judge tokens: 42963
+- agent tokens (this eval): 313737 (quality=234587, security=39761, test_gap=39389)
+- judge tokens: 60036
