@@ -38,6 +38,11 @@ MODELS = {
 # test_gap) AND from the eval judge, so the eval stays an independent measure.
 VERIFIER_MODEL = os.getenv("VERIFIER_MODEL", "Qwen/Qwen3-235B-A22B-Instruct-2507")
 
+# Toggle the verification pass on/off. Default ON (production behavior). Set
+# VERIFY_ENABLED=false to measure the pre-verification baseline in eval, so the
+# verifier's precision lift shows up as a clean A/B delta in LangSmith.
+VERIFY_ENABLED: bool = os.getenv("VERIFY_ENABLED", "true").lower() != "false"
+
 # Eval judge — deliberately a DIFFERENT model family than any reviewer OR the
 # verifier above, to avoid self-grading bias when scoring precision.
 JUDGE_MODEL = os.getenv("JUDGE_MODEL", "openai/gpt-oss-120b")

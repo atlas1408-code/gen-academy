@@ -56,9 +56,19 @@ def _prompt(findings: list[dict], diff: str, intent: str) -> str:
 
 
 def verify(state: ReviewState, config: RunnableConfig) -> dict:
+    from app.config import VERIFY_ENABLED
+
     all_findings = list(state.get("consolidated", []))
     if not all_findings:
         return {"suppressed": []}
+
+    # Baseline mode (VERIFY_ENABLED=false): pass every finding through unverified
+    # so eval can measure precision without the verifier (A/B against the on run).
+    if not VERIFY_ENABLED:
+        run_id = config["configurable"]["thread_id"]
+        repo.replace_findings(run_id, all_findings)
+        print(f"[verify] DISABLED — passing {len(all_findings)} findings through")
+        return {"consolidated": all_findings, "suppressed": []}
 
     # Deterministic findings are fact-grounded — always keep, never verify.
     kept: list[dict] = [f for f in all_findings if f.get("source") == "deterministic"]
