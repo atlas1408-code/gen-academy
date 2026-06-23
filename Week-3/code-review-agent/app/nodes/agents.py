@@ -34,7 +34,14 @@ _SYSTEM = {
         "You are a senior code reviewer focused strictly on CODE QUALITY: "
         "readability, duplication, dead code, error handling, naming, mutable "
         "default arguments, and maintainability. Ignore security and test "
-        "coverage — other reviewers handle those."
+        "coverage — other reviewers handle those.\n\n"
+        "Hold a HIGH bar. Only report a finding when there is a concrete, "
+        "material defect tied to a specific changed line, with a real negative "
+        "consequence (a bug, broken behavior, or a genuine maintainability cost). "
+        "Do NOT report subjective style preferences, speculative 'could be "
+        "cleaner' nitpicks, hypotheticals, or anything not directly evidenced by "
+        "the diff. When in doubt, omit it — a short precise review beats a long "
+        "noisy one, and returning no findings on a clean change is correct."
     ),
     "security": (
         "You are an application security reviewer. Focus strictly on SECURITY "

@@ -33,7 +33,26 @@ _SYSTEM = (
 _KEEP_CONFIDENCE = {"high", "medium"}
 
 
-def _prompt(findings: list[dict], diff: str, intent: str) -> str:
+def _format_repo_refs(repo_refs: dict) -> str:
+    """Render cross-file call sites so the verifier can treat blast-radius
+    findings (callers broken elsewhere) as grounded, not out_of_scope."""
+    if not repo_refs:
+        return ""
+    lines = []
+    for sym, refs in repo_refs.items():
+        for r in refs[:4]:
+            lines.append(f"  - `{sym}` used at {r.get('path')}:{r.get('line')}: "
+                         f"{r.get('snippet', '')}")
+    if not lines:
+        return ""
+    return ("## Cross-file references (REAL call sites elsewhere in the repo)\n"
+            "These lines are outside the diff but are genuine usages of the "
+            "changed symbols. A finding about breakage/impact at these call "
+            "sites IS grounded — do not mark it out_of_scope.\n"
+            + "\n".join(lines) + "\n\n")
+
+
+def _prompt(findings: list[dict], diff: str, intent: str, repo_refs: dict) -> str:
     lines = []
     for i, f in enumerate(findings):
         lines.append(
@@ -45,11 +64,12 @@ def _prompt(findings: list[dict], diff: str, intent: str) -> str:
     return (
         f"## PR intent (untrusted)\n{intent}\n\n"
         f"## Diff under review\n```diff\n{diff}\n```\n\n"
+        + _format_repo_refs(repo_refs) +
         f"## Findings to verify (by index)\n" + "\n".join(lines) + "\n\n"
         "For EACH finding, decide if it is a real, actionable issue grounded in "
-        "the diff. A finding that only comments on scope, intent, or restates the "
-        "PR description — without a concrete code defect — is out_of_scope "
-        "(invalid). Return ONLY JSON:\n"
+        "the diff OR in the cross-file references above. A finding that only "
+        "comments on scope, intent, or restates the PR description — without a "
+        "concrete code defect — is out_of_scope (invalid). Return ONLY JSON:\n"
         '{"verdicts": [{"index": int, "verdict": "valid"|"invalid", '
         '"confidence": "high"|"medium"|"low", "reason": str}]}'
     )
@@ -88,7 +108,8 @@ def verify(state: ReviewState, config: RunnableConfig) -> dict:
     pr = state.get("pr_meta", {})
     intent = f"{pr.get('title', '')}\n{(pr.get('body') or '')[:800]}"
     result = call_agent_with_repair(
-        get_verifier(), _prompt(findings, state.get("diff", ""), intent),
+        get_verifier(),
+        _prompt(findings, state.get("diff", ""), intent, state.get("repo_refs", {})),
         "verifier", system=_SYSTEM, max_retries=1,
     )
 
