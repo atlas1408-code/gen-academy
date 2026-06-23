@@ -26,7 +26,10 @@ NEBIUS_BASE_URL: str = os.getenv(
 # Model id per agent (verified against the Token Factory /models catalog).
 MODELS = {
     "quality": os.getenv("MODEL_QUALITY", "moonshotai/Kimi-K2.6"),
-    "security": os.getenv("MODEL_SECURITY", "deepseek-ai/DeepSeek-V3.2"),
+    # DeepSeek-V3.2 was deprecated from the Token Factory catalog (404); V4-Pro
+    # is the current DeepSeek successor (kept distinct from the Qwen verifier and
+    # gpt-oss judge for independence).
+    "security": os.getenv("MODEL_SECURITY", "deepseek-ai/DeepSeek-V4-Pro"),
     "test_gap": os.getenv("MODEL_TEST_GAP", "meta-llama/Llama-3.3-70B-Instruct"),
     "consolidate": os.getenv(
         "MODEL_CONSOLIDATE", "Qwen/Qwen3-235B-A22B-Instruct-2507"
