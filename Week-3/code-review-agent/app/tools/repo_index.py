@@ -13,11 +13,11 @@ from pathlib import Path
 from app.tools import github
 
 _CODE_EXT = {".py"}                 # v1 is Python-only (matches tree-sitter/ruff)
-_MAX_FILES = 40                     # cap files scanned (cost/latency guard)
+_MAX_FILES = 12                     # cap files scanned (cost/latency/rate-limit guard)
 _MAX_REFS_PER_SYMBOL = 6
 
 
-_MAX_TEST_FILES = 25
+_MAX_TEST_FILES = 12
 
 
 def is_test_file(path: str) -> bool:
@@ -34,11 +34,17 @@ def load_test_corpus(owner: str, repo: str, ref: str) -> str | None:
     tree can't be read / there are no test files (so callers stay conservative)."""
     if not (owner and repo and ref):
         return None
-    paths = [p for p in github.fetch_tree(owner, repo, ref) if is_test_file(p)]
-    paths = paths[:_MAX_TEST_FILES]
-    if not paths:
-        return None
-    parts = [s for p in paths if (s := github.fetch_file_at(owner, repo, p, ref))]
+    try:
+        paths = [p for p in github.fetch_tree(owner, repo, ref) if is_test_file(p)]
+        paths = paths[:_MAX_TEST_FILES]
+        if not paths:
+            return None
+        parts = []
+        for p in paths:
+            if s := github.fetch_file_at(owner, repo, p, ref):
+                parts.append(s)
+    except github.GitHubError:
+        return None  # fail open (e.g. rate-limited): caller stays conservative
     return "\n".join(parts) if parts else None
 
 
@@ -50,16 +56,22 @@ def find_references(
     if not symbols or not ref:
         return {}
 
-    paths = [
-        p for p in github.fetch_tree(owner, repo, ref)
-        if Path(p).suffix in _CODE_EXT and p not in exclude_paths
-    ][:_MAX_FILES]
+    try:
+        paths = [
+            p for p in github.fetch_tree(owner, repo, ref)
+            if Path(p).suffix in _CODE_EXT and p not in exclude_paths
+        ][:_MAX_FILES]
+    except github.GitHubError:
+        return {}  # fail open (e.g. rate-limited): no cross-file refs this run
 
     patterns = {s: re.compile(rf"\b{re.escape(s)}\b") for s in symbols}
     refs: dict[str, list[dict]] = {s: [] for s in symbols}
 
     for path in paths:
-        src = github.fetch_file_at(owner, repo, path, ref)
+        try:
+            src = github.fetch_file_at(owner, repo, path, ref)
+        except github.GitHubError:
+            break  # stop scanning on error (rate-limit) and return partial refs
         if not src:
             continue
         for lineno, line in enumerate(src.splitlines(), 1):

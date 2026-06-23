@@ -19,6 +19,10 @@ _HUNK_RE = re.compile(r"^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@")
 
 _MAX_RETRIES = 4
 _BACKOFF_BASE = 1.5
+# Cap any single backoff sleep. GitHub's rate-limit reset can be minutes away;
+# without this cap a single rate-limited call blocks the whole run for minutes.
+# Capping fails fast instead, letting callers degrade / fail open.
+_MAX_BACKOFF = 30.0
 
 
 class GitHubError(RuntimeError):
@@ -27,6 +31,12 @@ class GitHubError(RuntimeError):
     def __init__(self, message: str, status: int | None = None):
         super().__init__(message)
         self.status = status
+
+
+class RateLimitError(GitHubError):
+    """Rate-limited after exhausting retries. Distinct from a 404 so callers
+    that scan many files (repo_index) can abort early instead of grinding
+    through every file behind the limit."""
 
 
 def parse_pr_url(pr_url: str) -> tuple[str, str, int]:
@@ -66,10 +76,13 @@ def _get(client: httpx.Client, url: str, accept: str) -> httpx.Response:
             or "rate limit" in resp.text.lower()
         )
         if resp.status_code >= 500 or rate_limited:
-            wait = _retry_after_seconds(resp, attempt)
             if attempt < _MAX_RETRIES - 1:
-                time.sleep(wait)
+                time.sleep(_retry_after_seconds(resp, attempt))
                 continue
+            if rate_limited:
+                raise RateLimitError(
+                    f"GitHub rate limit for {url}", resp.status_code
+                )
         # Other 4xx (or retries exhausted) -> permanent.
         raise GitHubError(
             f"GitHub {resp.status_code} for {url}: {resp.text[:200]}", resp.status_code
@@ -125,10 +138,10 @@ def post_general_comment(owner: str, repo: str, number: int, body: str) -> dict:
 
 def _retry_after_seconds(resp: httpx.Response, attempt: int) -> float:
     if (ra := resp.headers.get("Retry-After")) and ra.isdigit():
-        return float(ra)
+        return min(float(ra), _MAX_BACKOFF)
     if reset := resp.headers.get("X-RateLimit-Reset"):
         try:
-            return max(0.0, float(reset) - time.time())
+            return min(max(0.0, float(reset) - time.time()), _MAX_BACKOFF)
         except ValueError:
             pass
     return _BACKOFF_BASE ** attempt
@@ -200,8 +213,10 @@ def fetch_file_at(owner: str, repo: str, path: str, ref: str) -> str | None:
     with httpx.Client(timeout=30.0, follow_redirects=True) as client:
         try:
             resp = _get(client, url, "application/vnd.github.raw")
+        except RateLimitError:
+            raise  # let scanners (repo_index) abort early instead of grinding on
         except GitHubError:
-            return None
+            return None  # benign: file absent at this ref
     return resp.text
 
 
